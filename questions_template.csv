@@ -1,0 +1,41 @@
+question_id,lesson_id,question_text,question_type,option_a,option_b,option_c,option_d,correct_options
+q_dn_01,LS_DONGNAI,Ai là người có công khai phá và thành lập phủ Gia Định (xứ Trấn Biên - Đồng Nai) vào năm 1698?,single_choice,Nguyễn Hữu Cảnh,Thoại Ngọc Hầu,Nguyễn Tri Phương,Trương Định,a
+q_dn_02,LS_DONGNAI,Sông nào chảy qua tỉnh Đồng Nai có trữ lượng nước ngọt lớn thứ nhì Nam Bộ?,single_choice,Sông Tiền,Sông Đồng Nai,Sông Sài Gòn,Sông Hậu,b
+q_dn_03,LS_DONGNAI,Những di tích / địa danh lịch sử nào sau đây thuộc tỉnh Đồng Nai? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Căn cứ Chiến khu Đ,Trận tuyến Xuân Lộc,Đô thị cổ Hội An,Vườn quốc gia Nam Cát Tiên,"a, b, d"
+q_dn_04,LS_DONGNAI,Loại cây công nghiệp lâu năm nào sau đây được trồng phổ biến tại Đồng Nai?,single_choice,Lúa nước,Cao su,Chè (Trà),Vải thiều,b
+q_dn_05,LS_DONGNAI,"Chiến dịch giải phóng địa bàn nào ở Đồng Nai vào tháng 4/1975 được coi là ""Cánh cửa thép"" mở đường vào Sài Gòn?",single_choice,Trận Núi Thành,Chiến thắng Xuân Lộc,Chiến dịch Bình Giã,Chiến thắng Đồng Xoài,b
+q_dn_06,LS_DONGNAI,Đặc điểm địa hình chủ yếu của tỉnh Đồng Nai là gì?,single_choice,Núi cao đèo dốc hiểm trở,Tương đối bằng phẳng,đồi bát úp lượn sóng,Hoàn toàn là đồng bằng ngập mặn,b
+q_dn_07,LS_DONGNAI,Đồng Nai thuộc vùng kinh tế nào của Việt Nam?,single_choice,Đồng bằng sông Cửu Long,Tây Nguyên,Đông Nam Bộ,Duyên hải Nam Trung Bộ,c
+q_dn_08,LS_DONGNAI,Vườn quốc gia nổi tiếng nào nằm trên địa bàn tỉnh Đồng Nai được UNESCO công nhận là Khu dự trữ sinh quyển thế giới?,single_choice,Cúc Phương,Nam Cát Tiên,U Minh Hạ,Ba Bể,b
+q_dn_09,LS_DONGNAI,Thành phố nào là trung tâm hành chính - kinh tế lớn nhất của tỉnh Đồng Nai?,single_choice,Thành phố Biên Hòa,Thành phố Long Khánh,Huyện Nhơn Trạch,Thành phố Thủ Dầu Một,a
+q_dn_10,LS_DONGNAI,Đặc điểm kinh tế nổi bật của tỉnh Đồng Nai hiện nay là gì? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Một trong những trung tâm công nghiệp lớn của cả nước,Nơi phát triển mạnh cây công nghiệp xuất khẩu,Trung tâm khai thác băng tuyết,Đầu mối giao thông trọng điểm phía Nam,"a, b, d"
+q_db_01,LS_DIENBIEN,Chiến thắng Điện Biên Phủ lịch sử diễn ra vào năm nào?,single_choice,1945,1954,1968,1975,b
+q_db_02,LS_DIENBIEN,Ai là Tổng tư lệnh chỉ huy Chiến dịch Điện Biên Phủ năm 1954?,single_choice,Chủ tịch Hồ Chí Minh,Đại tướng Võ Nguyên Giáp,Đại tướng Văn Tiến Dũng,Đồng chí Trường Chinh,b
+q_db_03,LS_DIENBIEN,Thung lũng cánh đồng nổi tiếng nào lớn nhất vùng Tây Bắc nằm ở tỉnh Điện Biên?,single_choice,Mường Thanh,Mường Lò,Mường Than,Mường Tấc,a
+q_db_04,LS_DIENBIEN,Đặc điểm nào sau đây mô tả đúng về Chiến thắng Điện Biên Phủ 1954? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Diễn ra suốt 56 ngày đêm,Đập tan tập đoàn căn cứ điểm của thực dân Pháp,Buộc Pháp ký Hiệp định Giơ-ne-vơ năm 1954,Giải phóng hoàn toàn miền Nam,"a, b, c"
+q_db_05,LS_DIENBIEN,Dòng sông nào chảy qua thung lũng bồi đắp phù sa cho cánh đồng Mường Thanh?,single_choice,Sông Nam Rốm,Sông Đà,Sông Mã,Sông Chảy,a
+q_db_06,LS_DIENBIEN,Phương châm tác chiến chiến lược đúng đắn của Đại tướng Võ Nguyên Giáp tại Điện Biên Phủ là gì?,single_choice,"""Đánh nhanh","thắng nhanh""","""Đánh chắc","tiến chắc""",b
+q_db_07,LS_DIENBIEN,Ngọn đồi lịch sử nào tại Điện Biên Phủ diễn ra trận đánh giằng co ác liệt nhất giữa ta và địch?,single_choice,Đồi A1,Đồi C1,Đồi D1,Đồi E1,a
+q_db_08,LS_DIENBIEN,Con đèo hiểm trở nổi tiếng nào nằm trên tuyến đường huyết mạch vận chuyển lương thực vào Điện Biên?,single_choice,Đèo Pha Đin,Đèo Mã Pí Lèng,Đèo Khau Phạ,Đèo Ô Quy Hồ,a
+q_db_09,LS_DIENBIEN,Tướng Pháp nào chỉ huy tập đoàn căn cứ điểm Điện Biên Phủ bị bắt sống ngày 7/5/1954?,single_choice,Tướng De Castries (Đờ Cát-tơ-ri),Tướng Navarre (Na-va),Tướng Salan (Sa-lăng),Tướng De Lattre,a
+q_db_10,LS_DIENBIEN,Tỉnh Điện Biên thuộc vùng địa lý tự nhiên nào của Việt Nam?,single_choice,Tây Bắc,Đông Bắc,Đồng bằng sông Hồng,Bắc Trung Bộ,a
+q_hn_01,LS_HANOI,"Vua Lý Thái Tổ ban ""Chiếu dời đô"" chuyển kinh đô về Thăng Long (Hà Nội) vào năm nào?",single_choice,938,1010,1288,1428,b
+q_hn_02,LS_HANOI,Trường Đại học đầu tiên của Việt Nam nằm tại Hà Nội có tên là gì?,single_choice,Văn Miếu - Quốc Tử Giám,Trường Đông Kinh Nghĩa Thục,Học viện Quốc Gia,Trường Thi Hà Nội,a
+q_hn_03,LS_HANOI,Tên gọi lịch sử nào được đặt cho Hà Nội sau sự kiện Vua Lý Thái Tổ dời đô năm 1010?,single_choice,Thăng Long,Đại La,Đông Đô,Tây Đô,a
+q_hn_04,LS_HANOI,Dòng sông lớn nhất chảy qua lòng Thủ đô Hà Nội mang phù sa bồi đắp đồng bằng Bắc Bộ là gì?,single_choice,Sông Hồng,Sông Đáy,Sông Đuống,Sông Cầu,a
+q_hn_05,LS_HANOI,Chiến công lừng lẫy 12 ngày đêm đánh bại máy bay B-52 Mỹ trên bầu trời Hà Nội năm 1972 có tên gọi là gì?,single_choice,"""Điện Biên Phủ trên không""",Chiến dịch Hồ Chí Minh,Chiến thắng Đường 9 - Nam Lào,Trận Núi Thành,a
+q_hn_06,LS_HANOI,Di tích lịch sử văn hóa nổi tiếng nào gắn liền với truyền thuyết Vua Lê Lợi trả gươm thần cho Rùa Vàng?,single_choice,Hồ Hoàn Kiếm (Hồ Gươm),Hồ Tây,Chùa Một Cột,Cột cờ Hà Nội,a
+q_hn_07,LS_HANOI,"Vị vua nào có công lớn ban ""Chiếu dời đô"" khai sinh ra kinh đô Thăng Long ngàn năm văn hiến?",single_choice,Vua Lý Thái Tổ,Vua Trần Nhân Tông,Vua Lê Thái Tổ,Vua Quang Trung,a
+q_hn_08,LS_HANOI,Làng nghề truyền thống gốm sứ nổi tiếng hàng trăm năm nằm ven sông Hồng ở Hà Nội tên là gì?,single_choice,Làng gốm Bát Tràng,Làng lụa Vạn Phúc,Làng đúc đồng Ngũ Xá,Làng mây tre Phú Vinh,a
+q_hn_09,LS_HANOI,Đặc điểm khí hậu đặc trưng của Thủ đô Hà Nội là gì?,single_choice,Nhiệt đới gió mùa có 4 mùa rõ rệt,Nhiệt đới xích đạo có 2 mùa mưa nắng,Ôn đới quanh năm tuyết rơi,Khí hậu sa mạc khô hạn,a
+q_hn_10,LS_HANOI,Các di tích lịch sử - văn hóa tiêu biểu nào sau đây thuộc Thủ đô Hà Nội? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Hoàng thành Thăng Long,Văn Miếu - Quốc Tử Giám,Cột cờ Hà Nội,Cố đô Huế,"a, b, c"
+q_qn_01,LS_QUANGNAM,Hai di sản văn hóa thế giới nào được UNESCO công nhận nằm ở tỉnh Quảng Nam? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Đô thị cổ Hội An,Thánh địa Mỹ Sơn,Cố đô Huế,Phong Nha Kẻ Bàng,"a, b"
+q_qn_02,LS_QUANGNAM,Thương cảng quốc tế sầm uất bậc nhất Đông Nam Á từ thế kỷ XVI - XVII nằm ở Quảng Nam là gì?,single_choice,Đô thị cổ Hội An,Thương cảng Vân Đồn,Cảng Thị Nại,Cảng Ba Ngòi,a
+q_qn_03,LS_QUANGNAM,Quảng Nam được phong tặng danh hiệu 8 chữ vàng nào trong kháng chiến chống Mỹ cứu nước?,single_choice,"""Trung dũng kiên cường","đi đầu diệt Mỹ""","""Anh dũng bất khuất","kiên trung thắng địch""",a
+q_qn_04,LS_QUANGNAM,Quần đảo nổi tiếng bảo tồn hệ sinh thái biển quý hiếm được công nhận là Khu dự trữ sinh quyển thế giới ở Quảng Nam?,single_choice,Cù Lao Chàm,Đảo Lý Sơn,Côn Đảo,Phú Quốc,a
+q_qn_05,LS_QUANGNAM,Trận thắng đầu tiên tiêu diệt quân viễn chinh Mỹ năm 1965 diễn ra tại địa danh nào ở Quảng Nam?,single_choice,Núi Thành,Vạn Tường,Ấp Bắc,Bình Giã,a
+q_qn_06,LS_QUANGNAM,"Loại thảo dược dược liệu vô cùng quý hiếm được ví là ""quốc bảo"" trồng trên dãy núi cao ở Quảng Nam?",single_choice,Sâm Ngọc Linh,Nấm Linh Chi,Đông Trùng Hạ Thảo,Tam Thất,a
+q_qn_07,LS_QUANGNAM,Thánh địa Mỹ Sơn ở Quảng Nam là quần thể kiến trúc di tích đặc sắc của nền văn hóa nào?,single_choice,Văn hóa Chăm-pa,Văn hóa Óc Eo,Văn hóa Đông Sơn,Văn hóa Sa Huỳnh,a
+q_qn_08,LS_QUANGNAM,Dòng sông chính chảy qua lòng đô thị cổ Hội An đổ ra biển Cửa Đại là sông nào?,single_choice,Sông Thu Bồn,Sông Hương,Sông Hàn,Sông Gianh,a
+q_qn_09,LS_QUANGNAM,Đặc điểm địa hình tự nhiên tiêu biểu của tỉnh Quảng Nam là gì?,single_choice,Nghiêng từ tây sang đông,từ núi Trường Sơn xuống đồng bằng ven biển,Đồng bằng phù sa ngập nước quanh năm,Vùng cao nguyên đá vôi,a
+q_qn_10,LS_QUANGNAM,Các đặc sản / làng nghề nổi tiếng tại Quảng Nam bao gồm? (Chọn TẤT CẢ đáp án đúng),multiple_choice,Mì Quảng,Cao lầu,Làng mộc Kim Bồng,Làng gốm Thanh Hà,"a, b, c"

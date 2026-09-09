@@ -1,0 +1,630 @@
+/* ==========================================================================
+   Design System: Google Maps Clean Professional UI + Multi-Theme Support
+   Themes: 0) Default (Duolingo Classic), 1) Purple Pastel, 2) Explorer
+   All themes share consistent structural guidelines:
+   - Card radius: max 12px (--radius-xl)
+   - Button/Input radius: 8px (--radius-md)
+   - Badge/Tag radius: 6px (--radius-sm)
+   - Sidebar active item: 2px left border (radius = 0), weight 500
+   ========================================================================== */
+
+:root, [data-theme="default"] {
+  --font-heading: 'Roboto', -apple-system, sans-serif;
+  --font-body: 'Roboto', -apple-system, sans-serif;
+
+  --theme-bg: #ffffff;
+  --theme-card-bg: #ffffff;
+  --theme-text-dark: #0f172a;
+  --theme-text-muted: #64748b;
+  --theme-border: #e2e8f0;
+
+  --duo-green: #58cc02;
+  --duo-green-shadow: #46a302;
+  --duo-blue: #1cb0f6;
+  --duo-blue-shadow: #1899d6;
+  --duo-gold: #ffb800;
+  --duo-gold-shadow: #e5a500;
+  --duo-red: #ea4335;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
+
+  --theme-card-radius: 12px;
+  --theme-btn-radius: 8px;
+  --theme-badge-radius: 6px;
+
+  --theme-sidebar-bg: #ffffff;
+  --theme-sidebar-border: #e2e8f0;
+  --theme-sidebar-text: #64748b;
+  --theme-sidebar-active-bg: rgba(88, 204, 2, 0.12);
+  --theme-sidebar-active-text: #58cc02;
+
+  --theme-rank1-bg: #ffffff;
+  --theme-rank1-border: #ffb800;
+  --theme-rank1-text: #0f172a;
+  --theme-rank1-accent: #ffb800;
+
+  --theme-wardrobe-wearing-bg: #f0fdf4;
+  --theme-wardrobe-wearing-border: #58cc02;
+  --theme-wardrobe-wearing-text: #166534;
+}
+
+/* ==========================================================================
+   PURPLE PASTEL THEME (TÍM PASTELL HOÀNG GIA) DESIGN SYSTEM SPECIFICATION
+   ========================================================================== */
+[data-theme="purple"] {
+  --color-purple-900: #362A5C;
+  --color-purple-700: #453570;
+  --color-purple-400: #C9AFFB;
+  --color-purple-200: #D9CFF0;
+  --color-purple-100: #EDE4FB;
+  --color-purple-muted: #A79BC9;
+  --color-gold-500: #E0B85C;
+  --color-gold-text: #8A6D3F;
+  --color-bg-page: #F5F2FB;
+  --color-bg-card: #FFFFFF;
+  --color-border: #E2DAF5;
+  --color-border-strong: #D9CFF0;
+  --color-text-primary: #2E2646;
+  --color-text-secondary: #6B6089;
+  --color-text-muted: #9086AC;
+  --color-success: #2F7D5E;
+  --color-success-bg: #E3F3EA;
+  --color-warning: #8A6D3F;
+  --color-warning-bg: #FBF1DD;
+  --color-danger: #A3384A;
+  --color-danger-bg: #FBE8EC;
+  --rank-gold: #E0B85C;
+  --rank-silver: #B8ADD6;
+  --rank-bronze: #B08968;
+
+  --font-heading: 'Space Grotesk', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --shadow-card: 0 1px 2px rgba(54, 42, 92, 0.06), 0 2px 8px rgba(54, 42, 92, 0.05);
+
+  --theme-bg: #F5F2FB;
+  --theme-card-bg: #FFFFFF;
+  --theme-card-border: #E2DAF5;
+  --theme-text-dark: #2E2646;
+  --theme-text-muted: #6B6089;
+  --theme-border: #E2DAF5;
+
+  --duo-green: #362A5C;
+  --duo-green-shadow: #281F45;
+  --duo-blue: #C9AFFB;
+  --duo-blue-shadow: #B291F7;
+  --duo-gold: #E0B85C;
+  --duo-gold-shadow: #C69F45;
+  --duo-red: #A3384A;
+
+  --theme-card-radius: 12px;
+  --theme-btn-radius: 8px;
+  --theme-badge-radius: 6px;
+
+  --theme-sidebar-bg: #362A5C;
+  --theme-sidebar-border: #453570;
+  --theme-sidebar-text: #A79BC9;
+  --theme-sidebar-active-bg: rgba(201, 175, 251, 0.15);
+  --theme-sidebar-active-text: #C9AFFB;
+
+  --theme-rank1-bg: #362A5C;
+  --theme-rank1-border: #E0B85C;
+  --theme-rank1-text: #ffffff;
+  --theme-rank1-accent: #E0B85C;
+
+  --theme-wardrobe-wearing-bg: #362A5C;
+  --theme-wardrobe-wearing-border: #C9AFFB;
+  --theme-wardrobe-wearing-text: #ffffff;
+}
+
+/* ==========================================================================
+   EXPLORER THEME DESIGN SYSTEM SPECIFICATION
+   ========================================================================== */
+[data-theme="explorer"] {
+  --color-navy-900: #1B2437;
+  --color-navy-800: #232D45;
+  --color-navy-muted: #8A93A8;
+  --color-amber-600: #C97D3C;
+  --color-amber-500: #E0A458;
+  --color-amber-50: #FAEEDA;
+  --color-teal-600: #2C7873;
+  --color-teal-50: #E1F0EE;
+  --color-bg-page: #F5F0E6;
+  --color-bg-card: #FDFBF6;
+  --color-bg-subtle: #EDE7D8;
+  --color-border: #D3D1C7;
+  --color-border-strong: #B4B2A9;
+  --color-text-primary: #2C2C2A;
+  --color-text-secondary: #5F5E5A;
+  --color-text-muted: #888780;
+  --color-success: #3B6D11;
+  --color-success-bg: #EAF3DE;
+  --color-warning: #854F0B;
+  --color-warning-bg: #FAEEDA;
+  --color-danger: #A32D2D;
+  --color-danger-bg: #FCEBEB;
+  --rank-gold: #E0A458;
+  --rank-silver: #B4B2A9;
+  --rank-bronze: #B08968;
+
+  --font-heading: 'Space Grotesk', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --shadow-card: 0 1px 2px rgba(27, 36, 55, 0.05), 0 2px 8px rgba(27, 36, 55, 0.04);
+
+  --theme-bg: #F5F0E6;
+  --theme-card-bg: #FDFBF6;
+  --theme-text-dark: #2C2C2A;
+  --theme-text-muted: #5F5E5A;
+  --theme-border: #D3D1C7;
+
+  --duo-green: #C97D3C;
+  --duo-green-shadow: #B56E30;
+  --duo-blue: #2C7873;
+  --duo-blue-shadow: #205C58;
+  --duo-gold: #E0A458;
+  --duo-gold-shadow: #C78B3F;
+  --duo-red: #A32D2D;
+
+  --theme-card-radius: 12px;
+  --theme-btn-radius: 8px;
+  --theme-badge-radius: 6px;
+
+  --theme-sidebar-bg: #1B2437;
+  --theme-sidebar-border: #232D45;
+  --theme-sidebar-text: #8A93A8;
+  --theme-sidebar-active-bg: rgba(224, 164, 88, 0.15);
+  --theme-sidebar-active-text: #E0A458;
+
+  --theme-rank1-bg: #1B2437;
+  --theme-rank1-border: #E0A458;
+  --theme-rank1-text: #ffffff;
+  --theme-rank1-accent: #E0A458;
+
+  --theme-wardrobe-wearing-bg: #2C2C2A;
+  --theme-wardrobe-wearing-border: #E0A458;
+  --theme-wardrobe-wearing-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--theme-bg);
+  color: var(--theme-text-dark);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+/* Global No-Shadow Flat Border System Rules */
+*, .shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+  box-shadow: none !important;
+}
+
+/* Sharp Clean Flat Card */
+.duo-card {
+  background: var(--theme-card-bg, #ffffff);
+  border: 1px solid var(--theme-border, #e2e8f0);
+  border-radius: var(--theme-card-radius);
+  box-shadow: none !important;
+}
+
+.duo-card, .bg-white.border, .glass-panel, .glass-panel-gold {
+  border-radius: var(--theme-card-radius) !important;
+}
+
+/* Sharp Clean Buttons */
+.btn-duo-green {
+  background-color: var(--duo-green);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 10px 20px;
+  border-radius: var(--theme-btn-radius);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  box-shadow: none !important;
+}
+.btn-duo-green:hover {
+  filter: brightness(0.92);
+}
+.btn-duo-green:active {
+  transform: scale(0.98);
+}
+
+.btn-duo-blue {
+  background-color: var(--duo-blue);
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 10px 20px;
+  border-radius: var(--theme-btn-radius);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  box-shadow: none !important;
+}
+.btn-duo-blue:hover {
+  filter: brightness(0.92);
+}
+.btn-duo-blue:active {
+  transform: scale(0.98);
+}
+
+.btn-duo-outline {
+  background-color: #ffffff;
+  color: var(--duo-text-dark);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  border-radius: var(--theme-btn-radius);
+  border: 1px solid var(--duo-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-duo-outline:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.badge, span.badge {
+  border-radius: var(--theme-badge-radius) !important;
+}
+
+/* Minimalist Text Navigation Links - 2px Left Border Active Style */
+.duo-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 0 !important;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--theme-sidebar-text, #64748b);
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+.duo-nav-link:hover {
+  background-color: #f8fafc;
+  color: var(--duo-text-dark);
+}
+.duo-nav-link.active {
+  background-color: rgba(88, 204, 2, 0.12);
+  color: #58cc02;
+  border-left: 2px solid #58cc02;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   THEME SPECIFIC OVERRIDES FOR PURPLE & EXPLORER & DEFAULT
+   -------------------------------------------------------------------------- */
+
+/* SIDEBAR OVERRIDES */
+[data-theme="purple"] aside,
+[data-theme="explorer"] aside {
+  background-color: var(--theme-sidebar-bg) !important;
+  border-right-color: var(--theme-sidebar-border) !important;
+}
+
+[data-theme="purple"] aside h1,
+[data-theme="explorer"] aside h1 {
+  color: var(--theme-sidebar-active-text) !important;
+}
+
+[data-theme="purple"] .duo-nav-link,
+[data-theme="explorer"] .duo-nav-link {
+  color: var(--theme-sidebar-text) !important;
+  border-radius: 0 !important;
+  border-left: 2px solid transparent;
+}
+
+[data-theme="purple"] .duo-nav-link:hover {
+  background-color: #453570 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="explorer"] .duo-nav-link:hover {
+  background-color: #232D45 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="purple"] .duo-nav-link.active {
+  background-color: rgba(201, 175, 251, 0.15) !important;
+  color: #C9AFFB !important;
+  border-left: 2px solid #C9AFFB !important;
+  font-weight: 500;
+}
+
+[data-theme="explorer"] .duo-nav-link.active {
+  background-color: rgba(224, 164, 88, 0.15) !important;
+  color: #E0A458 !important;
+  border-left: 2px solid #E0A458 !important;
+  font-weight: 500;
+}
+
+[data-theme="purple"] aside .border-t,
+[data-theme="explorer"] aside .border-t {
+  border-top-color: var(--theme-sidebar-border) !important;
+}
+
+[data-theme="purple"] aside .text-slate-900,
+[data-theme="explorer"] aside .text-slate-900 {
+  color: #ffffff !important;
+}
+
+/* SIDEBAR USER CARD TEXT COLORS BY THEME */
+.sidebar-user-name {
+  color: #0f172a !important;
+  font-weight: 800;
+}
+.sidebar-user-subtext {
+  color: #64748b !important;
+  font-weight: 700;
+}
+
+[data-theme="purple"] .sidebar-user-name {
+  color: #362A5C !important;
+}
+[data-theme="purple"] .sidebar-user-subtext {
+  color: #6B6089 !important;
+}
+
+[data-theme="explorer"] .sidebar-user-name {
+  color: #1B2437 !important;
+}
+[data-theme="explorer"] .sidebar-user-subtext {
+  color: #C97D3C !important;
+}
+
+/* THEME PROFILE USERNAME BADGE */
+.theme-profile-badge {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="purple"] .theme-profile-badge {
+  background-color: #362A5C !important;
+  color: #C9AFFB !important;
+  border-color: #453570 !important;
+}
+
+[data-theme="explorer"] .theme-profile-badge {
+  background-color: #1B2437 !important;
+  color: #E0A458 !important;
+  border-color: #232D45 !important;
+}
+
+/* MOBILE NAV TOP & BOTTOM OVERRIDES */
+[data-theme="purple"] .md\:hidden.sticky,
+[data-theme="purple"] .md\:hidden.fixed,
+[data-theme="explorer"] .md\:hidden.sticky,
+[data-theme="explorer"] .md\:hidden.fixed {
+  background-color: var(--theme-sidebar-bg) !important;
+  border-color: var(--theme-sidebar-border) !important;
+}
+
+[data-theme="purple"] .md\:hidden span.text-\[\#58cc02\],
+[data-theme="explorer"] .md\:hidden span.text-\[\#58cc02\] {
+  color: var(--theme-sidebar-active-text) !important;
+}
+
+[data-theme="purple"] .md\:hidden button.text-\[\#58cc02\],
+[data-theme="purple"] .md\:hidden button.text-sky-600,
+[data-theme="purple"] .md\:hidden button.text-\[\#ce82ff\],
+[data-theme="purple"] .md\:hidden button.text-\[\#ffb800\],
+[data-theme="explorer"] .md\:hidden button.text-\[\#58cc02\],
+[data-theme="explorer"] .md\:hidden button.text-sky-600,
+[data-theme="explorer"] .md\:hidden button.text-\[\#ce82ff\],
+[data-theme="explorer"] .md\:hidden button.text-\[\#ffb800\] {
+  color: var(--theme-sidebar-active-text) !important;
+}
+
+/* PURPLE PASTEL CARDS & BADGES OVERRIDES */
+[data-theme="purple"] .bg-white {
+  background-color: #FFFFFF !important;
+}
+
+[data-theme="purple"] .border-slate-200,
+[data-theme="purple"] .border-gray-200 {
+  border-color: #E2DAF5 !important;
+}
+
+[data-theme="purple"] .bg-slate-50,
+[data-theme="purple"] .bg-gray-50 {
+  background-color: #EDE4FB !important;
+}
+
+[data-theme="purple"] .bg-\[\#58cc02\],
+[data-theme="purple"] .bg-emerald-500 {
+  background-color: #E3F3EA !important;
+  color: #2F7D5E !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="purple"] .bg-\[\#f59e0b\],
+[data-theme="purple"] .bg-amber-500 {
+  background-color: #FBF1DD !important;
+  color: #8A6D3F !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="purple"] .bg-slate-200,
+[data-theme="purple"] .bg-rose-500 {
+  background-color: #FBE8EC !important;
+  color: #A3384A !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="purple"] .badge-stamp,
+[data-theme="purple"] .bg-amber-950\/70 {
+  background-color: #362A5C !important;
+  color: #F5EEDA !important;
+  border: 1px solid #E0B85C !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="purple"] .lg\:sticky {
+  background-color: #362A5C !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+}
+[data-theme="purple"] .lg\:sticky h3,
+[data-theme="purple"] .lg\:sticky .text-slate-300,
+[data-theme="purple"] .lg\:sticky .text-white {
+  color: #FFFFFF !important;
+}
+
+/* EXPLORER SPECIFIC CARDS & BADGES */
+[data-theme="explorer"] .bg-white {
+  background-color: #FDFBF6 !important;
+}
+
+[data-theme="explorer"] .border-slate-200,
+[data-theme="explorer"] .border-gray-200 {
+  border-color: #D3D1C7 !important;
+}
+
+[data-theme="explorer"] .bg-slate-50,
+[data-theme="explorer"] .bg-gray-50 {
+  background-color: #EDE7D8 !important;
+}
+
+/* BADGE PATTERNS FOR EXPLORER THEME */
+[data-theme="explorer"] .bg-\[\#58cc02\],
+[data-theme="explorer"] .bg-emerald-500 {
+  background-color: #EAF3DE !important;
+  color: #3B6D11 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="explorer"] .bg-\[\#f59e0b\],
+[data-theme="explorer"] .bg-amber-500 {
+  background-color: #FAEEDA !important;
+  color: #854F0B !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="explorer"] .bg-slate-200,
+[data-theme="explorer"] .bg-rose-500 {
+  background-color: #FCEBEB !important;
+  color: #A32D2D !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="explorer"] .badge-stamp,
+[data-theme="explorer"] .bg-amber-950\/70 {
+  background-color: #1B2437 !important;
+  color: #FAEEDA !important;
+  border: 1px solid #E0A458 !important;
+  border-radius: 6px !important;
+}
+
+/* LEADERBOARD RANK 1 PODIUM OVERRIDES */
+[data-theme="purple"] .glass-panel-gold {
+  background-color: #362A5C !important;
+  border: 2px solid #E0B85C !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="explorer"] .glass-panel-gold {
+  background-color: #1B2437 !important;
+  border: 2px solid #E0A458 !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="purple"] .glass-panel-gold .text-amber-300,
+[data-theme="explorer"] .glass-panel-gold .text-amber-300 {
+  color: #E0B85C !important;
+}
+
+[data-theme="purple"] .glass-panel,
+[data-theme="explorer"] .glass-panel {
+  border-radius: 12px !important;
+}
+
+/* WARDROBE WEARING ITEM CARD OVERRIDES */
+[data-theme="purple"] .border-amber-400.bg-amber-950\/20 {
+  background-color: #362A5C !important;
+  border-color: #C9AFFB !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="explorer"] .border-amber-400.bg-amber-950\/20 {
+  background-color: #2C2C2A !important;
+  border-color: #E0A458 !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+/* AVATAR PREVIEW CONTAINER OVERRIDE FOR EXPLORER */
+[data-theme="explorer"] .lg\:sticky {
+  background-color: #1B2437 !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+}
+[data-theme="explorer"] .lg\:sticky h3,
+[data-theme="explorer"] .lg\:sticky .text-slate-300,
+[data-theme="explorer"] .lg\:sticky .text-white {
+  color: #FDFBF6 !important;
+}

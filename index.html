@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vừa Đi Vừa Học | Gamification Lịch sử & Địa lý THCS</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              purple: {
+                900: '#362A5C', 700: '#453570', 400: '#C9AFFB',
+                200: '#D9CFF0', 100: '#EDE4FB', muted: '#A79BC9',
+              },
+              gold: { 500: '#E0B85C', text: '#8A6D3F' },
+              navy: { 900: '#1B2437', 800: '#232D45', muted: '#8A93A8' },
+              amber: { 600: '#C97D3C', 500: '#E0A458', 50: '#FAEEDA' },
+              teal: { 600: '#2C7873', 50: '#E1F0EE' },
+              bg: { page: '#F5F0E6', card: '#FDFBF6', subtle: '#EDE7D8' },
+              border: { DEFAULT: '#D3D1C7', strong: '#B4B2A9' },
+              text: { primary: '#2C2C2A', secondary: '#5F5E5A', muted: '#888780' },
+              rank: { gold: '#E0A458', silver: '#B4B2A9', bronze: '#B08968' },
+              duo: {
+                green: '#58cc02',
+                'green-shadow': '#46a302',
+                blue: '#1cb0f6',
+                'blue-shadow': '#1899d6',
+                gold: '#ffb800',
+                'gold-shadow': '#e5a500',
+                coral: '#ea4335',
+                'coral-shadow': '#d93025'
+              }
+            },
+            fontFamily: {
+              heading: ['Space Grotesk', 'sans-serif'],
+              body: ['Inter', 'sans-serif'],
+            },
+            borderRadius: {
+              sm: '6px', md: '8px', lg: '10px', xl: '12px',
+            },
+            boxShadow: {
+              card: '0 1px 2px rgba(27,36,55,0.05), 0 2px 8px rgba(27,36,55,0.04)',
+            }
+          }
+        }
+      }
+    </script>
+    <!-- Google Fonts: Roboto, Space Grotesk, Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-white font-['Roboto'] text-slate-800 antialiased selection:bg-emerald-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

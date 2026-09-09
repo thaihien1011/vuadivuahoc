@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function isTeacher() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // Lessons (Read Only for Students, Admin Write)
+    match /lessons/{lessonId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Questions (Read/Write for Teacher)
+    match /questions/{questionId} {
+      allow read, write: if isTeacher();
+    }
+
+    // Students collection
+    match /students/{studentId} {
+      allow read: if isUser(studentId) || isTeacher();
+      allow write: if isTeacher();
+    }
+
+    // Teachers collection
+    match /teachers/{teacherId} {
+      allow read: if isUser(teacherId);
+      allow write: if false; // Admin console only
+    }
+
+    // Quiz Attempts
+    match /quiz_attempts/{attemptId} {
+      allow read: if isAuthenticated() && resource.data.student_id == request.auth.uid;
+      allow write: if false; // Managed via Cloud Functions
+    }
+
+    // Locked Scores
+    match /locked_scores/{scoreId} {
+      allow read: if isAuthenticated() && (resource.data.student_id == request.auth.uid || isTeacher());
+      allow write: if false; // Managed via Cloud Functions
+    }
+
+    // Assignments
+    match /assignments/{assignmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isTeacher();
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
