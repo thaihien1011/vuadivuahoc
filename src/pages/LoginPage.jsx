@@ -28,10 +28,11 @@ export default function LoginPage({ onLoginSuccess }) {
       onLoginSuccess('student');
     } else {
       setCurrentAuthUser({
-        uid: 'teacher_001',
+        uid: 'teacher_002',
         role: 'teacher',
-        username: 'gv_nguyenvana',
-        name: 'Cô Nguyễn Thị Hoa'
+        username: 'thunga.130992@gmail.com',
+        name: 'Trần Thị Thu Nga',
+        email: 'thunga.130992@gmail.com'
       });
       onLoginSuccess('teacher');
     }

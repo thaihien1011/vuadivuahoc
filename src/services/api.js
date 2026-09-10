@@ -37,6 +37,22 @@ export async function syncStudentToFirestore(student) {
   }
 }
 
+export async function syncTeacherToFirestore(teacher) {
+  if (!teacher || !teacher.id) return;
+  try {
+    const teacherDocRef = doc(db, 'teachers', teacher.id);
+    await setDoc(teacherDocRef, {
+      id: teacher.id,
+      name: teacher.name,
+      email: teacher.recovery_email || teacher.email,
+      role: teacher.role || 'teacher',
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.error(`Firestore sync teacher error for ${teacher.id}:`, err);
+  }
+}
+
 const STORAGE_KEYS = {
   STUDENTS: 'vdvh_students',
   TEACHERS: 'vdvh_teachers',
@@ -63,7 +79,7 @@ function setLocal(key, data) {
 }
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v9';
+const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v11';
 
 // Initialize LocalStorage with dump data if empty or outdated version
 export function initLocalStorage() {
@@ -71,7 +87,7 @@ export function initLocalStorage() {
 
   if (!localStorage.getItem(STORAGE_KEYS.STUDENTS) || storedVersion !== CURRENT_DATA_VERSION) {
     setLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
-    setLocal(STORAGE_KEYS.TEACHERS, getLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS));
+    setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
     setLocal(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
     setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
     setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
@@ -91,17 +107,24 @@ export function initLocalStorage() {
       });
     }
 
-    // Sync initial students to Cloud Firestore
+    // Sync initial students & teachers to Cloud Firestore
     INITIAL_STUDENTS.forEach(st => {
       syncStudentToFirestore(st);
+    });
+    INITIAL_TEACHERS.forEach(t => {
+      syncTeacherToFirestore(t);
     });
 
     localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
   } else {
-    // Force refresh lessons & questions to match Google Sheet master data and clear attempts
+    // Force refresh lessons & questions & teachers to match master data
     setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
     setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
+    setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
     setLocal(STORAGE_KEYS.ATTEMPTS, []);
+    INITIAL_TEACHERS.forEach(t => {
+      syncTeacherToFirestore(t);
+    });
   }
 }
 

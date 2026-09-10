@@ -6,6 +6,14 @@ export const INITIAL_TEACHERS = [
     id: 'teacher_001',
     name: 'Cô Nguyễn Thị Hoa (GV Sử - Địa)',
     recovery_email: 'hoa.nguyen@thcstranphu.edu.vn',
+    password: '123456',
+    role: 'teacher'
+  },
+  {
+    id: 'teacher_002',
+    name: 'Trần Thị Thu Nga',
+    recovery_email: 'thunga.130992@gmail.com',
+    password: 'thunga0992',
     role: 'teacher'
   }
 ];
