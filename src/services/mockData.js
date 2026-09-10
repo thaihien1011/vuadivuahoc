@@ -25,6 +25,23 @@ export const INITIAL_CLASSES = [
 
 export const INITIAL_STUDENTS = [
   {
+    id: 'st_ntm001',
+    username: 'nguyentramy',
+    name: 'Nguyễn Trà My',
+    class_id: 'class_88',
+    class: 'Lớp 8/8',
+    gender: 'female',
+    body: 'body_female',
+    current_star: 50,
+    must_change_password: false,
+    avatar_config: {
+      hair: 'wi_hair_002',
+      top: 'wi_top_001',
+      bottom_or_skirt: 'wi_bottom_002',
+      footwear: 'wi_shoes_001'
+    }
+  },
+  {
     id: 'st_nth001',
     username: 'nguyenthaihien',
     name: 'Nguyen Thai Hien',

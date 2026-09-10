@@ -79,7 +79,7 @@ function setLocal(key, data) {
 }
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v11';
+const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v12';
 
 // Initialize LocalStorage with dump data if empty or outdated version
 export function initLocalStorage() {
