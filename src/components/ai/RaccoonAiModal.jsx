@@ -42,8 +42,8 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fade-in">
-      <div className="bg-white border-2 border-sky-400 rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 pb-16 sm:pb-3 animate-fade-in">
+      <div className="bg-white border-2 border-sky-400 rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[78vh] sm:max-h-[85vh] overflow-hidden mb-0">
         {/* HEADER */}
         <div className="bg-sky-500 p-4 text-white flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
