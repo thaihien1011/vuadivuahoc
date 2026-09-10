@@ -10,8 +10,17 @@ import { WARDROBE_ITEMS_CATALOG } from '../../config/constants';
  * 4. Top / Shirt (public/assets/avatar/top/<id>.png)
  * 5. Hair / Hat (public/assets/avatar/hair/<id>.png)
  */
-export default function AvatarCanvas({ avatarConfig = {}, size = 160, className = '' }) {
+export default function AvatarCanvas({ avatarConfig = {}, body = null, gender = null, size = 160, className = '' }) {
   const [imgErrors, setImgErrors] = useState({});
+
+  // Determine body type: base (boy) vs body_female (girl)
+  let activeBody = body;
+  if (!activeBody) {
+    const user = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
+    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
+    const st = students.find(s => s.id === user?.uid);
+    activeBody = st?.body || (st?.gender === 'female' || user?.gender === 'female' ? 'body_female' : 'base');
+  }
 
   const getEquippedItem = (slot) => {
     const itemId = avatarConfig[slot];
@@ -28,7 +37,9 @@ export default function AvatarCanvas({ avatarConfig = {}, size = 160, className 
   };
 
   // PNG Layer Image Paths
-  const bodyPng = '/assets/avatar/body/base.png';
+  const bodyPng = activeBody === 'body_female' && !imgErrors['body_female'] 
+    ? '/assets/avatar/body/body_female.png' 
+    : '/assets/avatar/body/base.png';
   const bottomPng = bottomItem?.imagePath || (bottomItem ? `/assets/avatar/bottom/${bottomItem.id}.png` : null);
   const footwearPng = footwearItem?.imagePath || (footwearItem ? `/assets/avatar/footwear/${footwearItem.id}.png` : null);
   const topPng = topItem?.imagePath || (topItem ? `/assets/avatar/top/${topItem.id}.png` : null);

@@ -13,6 +13,29 @@ import {
 } from './mockData';
 import { STAMP_REWARD_TABLE, WARDROBE_ITEMS_CATALOG } from '../config/constants';
 import * as XLSX from 'xlsx';
+import { db } from './firebaseConfig';
+import { collection, doc, getDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+
+export async function syncStudentToFirestore(student) {
+  if (!student || !student.id) return;
+  try {
+    const studentDocRef = doc(db, 'students', student.id);
+    await setDoc(studentDocRef, {
+      id: student.id,
+      name: student.name,
+      username: student.username,
+      class: student.class || 'Lớp 8A1',
+      gender: student.gender || 'female',
+      body: student.body || (student.gender === 'female' ? 'body_female' : 'base'),
+      current_star: typeof student.current_star === 'number' ? student.current_star : 0,
+      must_change_password: student.must_change_password || false,
+      avatar_config: student.avatar_config || {},
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.error(`Firestore sync student error for ${student.id}:`, err);
+  }
+}
 
 const STORAGE_KEYS = {
   STUDENTS: 'vdvh_students',
@@ -39,49 +62,46 @@ function setLocal(key, data) {
   localStorage.setItem(key, JSON.stringify(data));
 }
 
-// Initialize LocalStorage with dump data if empty
+const DATA_VERSION_KEY = 'vdvh_data_version';
+const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v9';
+
+// Initialize LocalStorage with dump data if empty or outdated version
 export function initLocalStorage() {
-  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS)) {
+  const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
+
+  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS) || storedVersion !== CURRENT_DATA_VERSION) {
     setLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
-    setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
+    setLocal(STORAGE_KEYS.TEACHERS, getLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS));
     setLocal(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
     setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
     setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
-    setLocal(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS);
-    setLocal(STORAGE_KEYS.LOCKED_SCORES, INITIAL_LOCKED_SCORES);
-    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES);
-    setLocal(STORAGE_KEYS.ATTEMPTS, []);
-    setLocal(STORAGE_KEYS.STAR_TRANSACTIONS, []);
-    setLocal(STORAGE_KEYS.AUDIT_LOG, []);
+    setLocal(STORAGE_KEYS.ASSIGNMENTS, getLocal(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS));
+    setLocal(STORAGE_KEYS.LOCKED_SCORES, getLocal(STORAGE_KEYS.LOCKED_SCORES, INITIAL_LOCKED_SCORES));
+    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, getLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES));
+    setLocal(STORAGE_KEYS.ATTEMPTS, []); // Reset any stale quiz attempts completely
+    
+    if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
+      setLocal(STORAGE_KEYS.CURRENT_USER, {
+        uid: 'st_nth001',
+        role: 'student',
+        username: 'nguyenthaihien',
+        name: 'Nguyen Thai Hien',
+        gender: 'male',
+        body: 'base'
+      });
+    }
 
-    // Set default logged in user as student Nguyễn Trà My
-    setLocal(STORAGE_KEYS.CURRENT_USER, {
-      uid: 'st_hs001',
-      role: 'student',
-      username: 'nguyentramy',
-      name: 'Nguyễn Trà My'
+    // Sync initial students to Cloud Firestore
+    INITIAL_STUDENTS.forEach(st => {
+      syncStudentToFirestore(st);
     });
+
+    localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
   } else {
-    // Ensure INITIAL_LOCKED_SCORES are merged if missing for test student
-    const existingScores = getLocal(STORAGE_KEYS.LOCKED_SCORES, []);
-    let updated = false;
-    INITIAL_LOCKED_SCORES.forEach(mockScore => {
-      const found = existingScores.some(s => s.student_id === mockScore.student_id && s.lesson_id === mockScore.lesson_id);
-      if (!found) {
-        existingScores.push(mockScore);
-        updated = true;
-      }
-    });
-    if (updated) {
-      setLocal(STORAGE_KEYS.LOCKED_SCORES, existingScores);
-    }
-
-    // Auto-update questions & lessons if localStorage has outdated dump data
-    const currentQ = getLocal(STORAGE_KEYS.QUESTIONS, []);
-    if (currentQ.length < INITIAL_QUESTIONS.length) {
-      setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
-    }
+    // Force refresh lessons & questions to match Google Sheet master data and clear attempts
     setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
+    setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
+    setLocal(STORAGE_KEYS.ATTEMPTS, []);
   }
 }
 
@@ -127,94 +147,114 @@ function getStampLevel(score) {
 }
 
 /* ==========================================================================
-   1. Function: getQuizQuestions(lesson_id)
+   1. Function: getQuizQuestions(lesson_id, forceNew = false)
    ========================================================================== */
-export async function getQuizQuestions(lesson_id) {
+export async function getQuizQuestions(lesson_id, forceNew = false) {
   const user = getCurrentAuthUser();
   if (!user || user.role !== 'student') {
     throw new Error('PERMISSION_DENIED: Bạn cần đăng nhập tài khoản học sinh');
   }
 
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === user.uid);
-  if (!student) throw new Error('PERMISSION_DENIED: Học sinh không tồn tại');
+  // 1. Fetch lesson directly from Cloud Firestore
+  let lesson = null;
+  try {
+    const lessonSnap = await getDoc(doc(db, 'lessons', lesson_id));
+    if (lessonSnap.exists()) {
+      lesson = lessonSnap.data();
+    }
+  } catch (err) {
+    console.warn('Firestore getDoc lesson error, using local dataset:', err);
+  }
 
-  const assignments = getLocal(STORAGE_KEYS.ASSIGNMENTS, []);
-  const lessons = getLocal(STORAGE_KEYS.LESSONS, []);
-  const lesson = lessons.find(l => l.id === lesson_id);
-
+  if (!lesson) {
+    lesson = INITIAL_LESSONS.find(l => l.id === lesson_id);
+  }
   if (!lesson) throw new Error('NOT_FOUND: Bài học không tồn tại');
 
-  const now = new Date();
-
-  // Check if attempt in_progress exists
   const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
-  let inProgressAttempt = attempts.find(
-    a => a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress'
-  );
 
-  const allQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
-  let lessonQuestions = allQuestions.filter(q => q.lesson_id === lesson_id);
+  // 2. Check for existing in_progress attempt for this (user.uid, lesson_id) if not forceNew
+  const existingAttempt = !forceNew ? attempts.find(
+    a => a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress' && Array.isArray(a.questions_pool) && a.questions_pool.length > 0
+  ) : null;
 
-  // If questions are missing or fewer than 10, pad with mock questions so UI always loads 10 questions
-  if (lessonQuestions.length < 10) {
-    const fallbackPool = INITIAL_QUESTIONS.length > 0 ? INITIAL_QUESTIONS : allQuestions;
-    let idx = 1;
-    let updatedAll = false;
-    while (lessonQuestions.length < 10) {
-      const src = fallbackPool[(lessonQuestions.length + idx) % fallbackPool.length];
-      const paddedQ = {
-        ...src,
-        id: `q_padded_${lesson_id}_${idx++}`,
-        lesson_id: lesson_id
-      };
-      lessonQuestions.push(paddedQ);
-      if (!allQuestions.some(x => x.id === paddedQ.id)) {
-        allQuestions.push(paddedQ);
-        updatedAll = true;
-      }
-    }
-    if (updatedAll) {
-      setLocal(STORAGE_KEYS.QUESTIONS, allQuestions);
-    }
-  }
-
-  let selectedQuestionIds = [];
-  let attempt_id = '';
-
-  if (inProgressAttempt) {
-    attempt_id = inProgressAttempt.id;
-    selectedQuestionIds = inProgressAttempt.question_ids;
-  } else {
-    // Random 10 questions
-    const shuffled = shuffleArray(lessonQuestions);
-    const chosen = shuffled.slice(0, 10);
-    selectedQuestionIds = chosen.map(q => q.id);
-
-    attempt_id = 'qa_' + Math.random().toString(36).substr(2, 9);
-    inProgressAttempt = {
-      id: attempt_id,
-      student_id: user.uid,
-      lesson_id: lesson_id,
-      status: 'in_progress',
-      question_ids: selectedQuestionIds,
-      started_at: now.toISOString()
-    };
-    attempts.push(inProgressAttempt);
-    setLocal(STORAGE_KEYS.ATTEMPTS, attempts);
-  }
-
-  // Prepare questions without correct_options
-  const sanitizeQuestions = selectedQuestionIds.map(qid => {
-    const q = allQuestions.find(x => x.id === qid) || lessonQuestions.find(x => x.id === qid);
-    if (!q) return null;
-    return {
-      question_id: q.id,
+  if (existingAttempt) {
+    const sanitizeQuestions = existingAttempt.questions_pool.map(q => ({
+      question_id: q.id || q.question_id,
       text: q.text,
       question_type: q.question_type || 'single_choice',
       options: q.options || []
+    }));
+
+    return {
+      attempt_id: existingAttempt.id,
+      status: 'in_progress',
+      lesson: {
+        lesson_id: lesson.id,
+        lesson_name: lesson.name,
+        location_name: lesson.location_name || lesson.province_name,
+        subtitle: lesson.subtitle || '',
+        intro_text: lesson.intro_text,
+        intro_video_url: lesson.intro_video_url
+      },
+      questions: sanitizeQuestions,
+      saved_answers: existingAttempt.answers || {},
+      started_at: existingAttempt.started_at
     };
-  }).filter(Boolean);
+  }
+
+  // 3. Otherwise, fetch questions strictly matching lesson_id from Cloud Firestore
+  let lessonQuestions = [];
+  try {
+    const qQuery = query(collection(db, 'questions'), where('lesson_id', '==', lesson_id));
+    const qSnapshot = await getDocs(qQuery);
+    qSnapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data && data.lesson_id === lesson_id) {
+        lessonQuestions.push(data);
+      }
+    });
+  } catch (err) {
+    console.warn('Firestore query questions error, using local dataset:', err);
+  }
+
+  // Strict fallback to INITIAL_QUESTIONS strictly matching lesson_id if Firestore query returned 0 items
+  if (lessonQuestions.length === 0) {
+    lessonQuestions = INITIAL_QUESTIONS.filter(q => q.lesson_id === lesson_id);
+  }
+
+  if (lessonQuestions.length === 0) {
+    throw new Error(`NOT_FOUND: Chưa có câu hỏi trắc nghiệm cho bài học ${lesson.location_name || lesson.name}`);
+  }
+
+  // Pick up to 10 random questions STRICTLY from this lesson's questions
+  const shuffled = shuffleArray(lessonQuestions);
+  const chosen = shuffled.slice(0, Math.min(10, shuffled.length));
+
+  const now = new Date();
+  const attempt_id = 'qa_' + Math.random().toString(36).substr(2, 9);
+  
+  const inProgressAttempt = {
+    id: attempt_id,
+    student_id: user.uid,
+    lesson_id: lesson_id,
+    status: 'in_progress',
+    question_ids: chosen.map(q => q.id),
+    questions_pool: chosen, // Store chosen questions directly for 100% exact evaluation
+    answers: {},
+    started_at: now.toISOString()
+  };
+  
+  const filteredAttempts = attempts.filter(a => !(a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress'));
+  filteredAttempts.push(inProgressAttempt);
+  setLocal(STORAGE_KEYS.ATTEMPTS, filteredAttempts);
+
+  const sanitizeQuestions = chosen.map(q => ({
+    question_id: q.id,
+    text: q.text,
+    question_type: q.question_type || 'single_choice',
+    options: q.options || []
+  }));
 
   return {
     attempt_id,
@@ -228,8 +268,18 @@ export async function getQuizQuestions(lesson_id) {
       intro_video_url: lesson.intro_video_url
     },
     questions: sanitizeQuestions,
+    saved_answers: {},
     started_at: inProgressAttempt.started_at
   };
+}
+
+export function saveInProgressAnswers(attempt_id, answers) {
+  const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
+  const attempt = attempts.find(a => a.id === attempt_id);
+  if (attempt && attempt.status === 'in_progress') {
+    attempt.answers = answers;
+    setLocal(STORAGE_KEYS.ATTEMPTS, attempts);
+  }
 }
 
 /* ==========================================================================
@@ -248,18 +298,18 @@ export async function submitQuiz(attempt_id, answers, duration_seconds = 0) {
     throw new Error('FAILED_PRECONDITION: Bài này đã nộp rồi. Hãy bấm Làm lại để tạo lượt mới.');
   }
 
-  // Validate answering all 10 questions
+  // Validate answering all questions in this attempt
   const answeredQuestionIds = Object.keys(answers || {});
   if (answeredQuestionIds.length < attempt.question_ids.length) {
-    throw new Error('INVALID_ARGUMENT: Vui lòng trả lời đầy đủ 10 câu trước khi nộp bài');
+    throw new Error(`INVALID_ARGUMENT: Vui lòng trả lời đầy đủ ${attempt.question_ids.length} câu trước khi nộp bài`);
   }
 
-  const allQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
+  const questionPool = attempt.questions_pool || [];
   let score = 0;
   const per_question_result = [];
 
   for (let qid of attempt.question_ids) {
-    const question = allQuestions.find(q => q.id === qid);
+    const question = questionPool.find(q => q.id === qid);
     const studentAns = answers[qid] || [];
     const isCorrect = question ? areSetsEqual(studentAns, question.correct_options || []) : false;
 
@@ -357,18 +407,17 @@ export async function saveScore(attempt_id) {
     setLocal(STORAGE_KEYS.STAR_TRANSACTIONS, transactions);
   }
 
-  // Always return correct_options review after clicking Save
-  const allQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
+  const questionPool = attempt.questions_pool || [];
   const review = attempt.question_ids.map(qid => {
-    const q = allQuestions.find(x => x.id === qid);
+    const q = questionPool.find(x => x.id === qid);
     const studentAns = attempt.answers[qid] || [];
     return {
       question_id: qid,
-      text: q.text,
-      options: q.options,
-      correct_options: q.correct_options,
+      text: q ? q.text : '',
+      options: q ? q.options : [],
+      correct_options: q ? q.correct_options : [],
       student_answer: studentAns,
-      is_correct: areSetsEqual(studentAns, q.correct_options)
+      is_correct: q ? areSetsEqual(studentAns, q.correct_options) : false
     };
   });
 
@@ -549,7 +598,17 @@ export async function syncQuestions(sheet_id) {
   };
 }
 
-export function getAllLessons() {
+export async function getAllLessons() {
+  try {
+    const qSnapshot = await getDocs(collection(db, 'lessons'));
+    const lessons = [];
+    qSnapshot.forEach(docSnap => {
+      lessons.push(docSnap.data());
+    });
+    if (lessons.length > 0) return lessons;
+  } catch (err) {
+    console.error('Firestore getAllLessons error:', err);
+  }
   return getLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
 }
 

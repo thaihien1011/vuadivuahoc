@@ -87,9 +87,33 @@ export default function WardrobeShop({ studentData, onUpdateStudent }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
         {/* LEFT COLUMN: LIVE 2D AVATAR SHOWCASE */}
         <div className="space-y-3">
+          {/* Gender & Body Indicator */}
+          {(() => {
+            const studentGender = studentData?.gender || currentUser?.gender || 'female';
+            const studentBody = studentData?.body || currentUser?.body || (studentGender === 'female' ? 'body_female' : 'base');
+
+            return (
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-bold shadow-sm">
+                <span className="text-slate-500">Giới tính nhân vật:</span>
+                <span className={`px-2.5 py-0.5 rounded-full font-black ${
+                  studentGender === 'female' 
+                    ? 'bg-pink-100 text-pink-700 border border-pink-300' 
+                    : 'bg-sky-100 text-sky-700 border border-sky-300'
+                }`}>
+                  {studentGender === 'female' ? '👧 Nữ (Body Female)' : '👦 Nam (Base Body)'}
+                </span>
+              </div>
+            );
+          })()}
+
           {/* Avatar Canvas Container */}
           <div className="bg-[#362A5C] rounded-xl p-6 flex items-center justify-center min-h-[220px] shadow-sm">
-            <AvatarCanvas avatarConfig={currentAvatarConfig} size={180} />
+            <AvatarCanvas 
+              avatarConfig={currentAvatarConfig} 
+              gender={studentData?.gender || currentUser?.gender} 
+              body={studentData?.body || currentUser?.body} 
+              size={180} 
+            />
           </div>
 
           {/* Equipped Info Card */}
@@ -172,33 +196,70 @@ export default function WardrobeShop({ studentData, onUpdateStudent }) {
               const isEquipped = currentAvatarConfig[item.slot] === item.id;
               const isLoading = loadingAction === item.id;
 
+              const slotFolder = item.slot === WARDROBE_SLOTS.BOTTOM_OR_SKIRT ? 'bottom' : item.slot;
+              const thumbPath = `/assets/avatar/thumb/${slotFolder}/${item.fileName || `${item.id}.png`}`;
+              const fullImgPath = item.imagePath || `/assets/avatar/${slotFolder}/${item.id}.png`;
+
               return (
                 <div
                   key={item.id}
-                  className={`p-4 rounded-xl border flex flex-col justify-between min-h-[140px] transition-all ${
+                  className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between min-h-[230px] transition-all shadow-sm ${
                     isEquipped
-                      ? 'bg-[#362A5C] text-white border-[#362A5C]'
-                      : 'bg-white text-slate-800 border-slate-200 hover:border-purple-300'
+                      ? 'bg-[#362A5C] text-white border-purple-500 ring-2 ring-purple-400/50'
+                      : 'bg-white text-slate-900 border-purple-200 hover:border-purple-500'
                   }`}
                 >
-                  <div>
-                    <h4 className="font-extrabold text-xs mb-1 line-clamp-2">
-                      {item.name}
-                    </h4>
+                  <div className="space-y-2.5">
+                    {/* SKIN IMAGE PREVIEW THUMBNAIL CONTAINER - WHITE BACKGROUND, THEME BORDER, 75% CENTERED IMAGE */}
+                    <div className="w-full h-32 bg-white rounded-xl border-2 border-purple-500/60 flex items-center justify-center p-2 relative overflow-hidden group shadow-inner">
+                      <img 
+                        src={thumbPath} 
+                        alt={item.name}
+                        onError={(e) => {
+                          e.target.src = fullImgPath;
+                        }}
+                        className="max-h-[75%] max-w-[75%] w-auto h-auto object-contain filter drop-shadow-md transition-transform duration-300 group-hover:scale-110 z-10 pointer-events-none"
+                      />
 
-                    {!isEquipped && (
-                      <div className="flex items-center gap-1 text-amber-600 font-extrabold text-[11px]">
-                        <Star className="w-3.5 h-3.5 fill-amber-500" />
-                        <span>{item.star_cost} sao</span>
+                      {/* FALLBACK SVG ILLUSTRATION IF PNG DOES NOT EXIST */}
+                      <div 
+                        className="hidden w-full h-full flex-col items-center justify-center rounded-lg p-1 text-center"
+                        style={{ backgroundColor: `${item.iconColor || '#6366f1'}15` }}
+                      >
+                        <div 
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-white shadow-md mb-1"
+                          style={{ backgroundColor: item.iconColor || '#6366f1' }}
+                        >
+                          {item.slot === WARDROBE_SLOTS.HAIR && <Scissors className="w-4 h-4" />}
+                          {item.slot === WARDROBE_SLOTS.TOP && <Shirt className="w-4 h-4" />}
+                          {item.slot === WARDROBE_SLOTS.BOTTOM_OR_SKIRT && <Scissors className="w-4 h-4 rotate-90" />}
+                          {item.slot === WARDROBE_SLOTS.FOOTWEAR && <Footprints className="w-4 h-4" />}
+                        </div>
+                        <span className="text-[9px] font-black tracking-wider uppercase text-slate-500">
+                          {item.slot}
+                        </span>
                       </div>
-                    )}
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-xs mb-1 line-clamp-1">
+                        {item.name}
+                      </h4>
+
+                      {!isEquipped && (
+                        <div className="flex items-center gap-1 text-amber-500 font-extrabold text-[11px]">
+                          <Star className="w-3.5 h-3.5 fill-amber-400" />
+                          <span>{item.star_cost} sao</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="pt-3">
+                  <div className="pt-2">
                     {isEquipped ? (
-                      <div className="space-y-1">
+                      <div className="flex items-center justify-center gap-1 py-1 bg-emerald-500/20 rounded-lg border border-emerald-400/40">
                         <Check className="w-4 h-4 text-emerald-400" />
-                        <span className="text-[11px] font-extrabold text-emerald-300 block">
+                        <span className="text-[11px] font-extrabold text-emerald-300">
                           Đang mặc
                         </span>
                       </div>

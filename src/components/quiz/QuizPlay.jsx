@@ -5,7 +5,7 @@ import {
   ArrowLeft, ChevronDown, ChevronUp
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { getQuizQuestions, submitQuiz, saveScore } from '../../services/api';
+import { getQuizQuestions, submitQuiz, saveScore, saveInProgressAnswers } from '../../services/api';
 
 export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
   const [activeTab, setActiveTab] = useState('intro'); // 'intro' | 'quiz'
@@ -41,6 +41,9 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
         setError(null);
         const data = await getQuizQuestions(lessonId);
         setQuizData(data);
+        if (data && data.saved_answers) {
+          setUserAnswers(data.saved_answers);
+        }
       } catch (err) {
         setError(err.message || 'Lỗi nạp bài học');
       } finally {
@@ -53,15 +56,21 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
   const handleSelectOption = (questionId, optionKey, isMultipleChoice) => {
     setUserAnswers(prev => {
       const currentAns = prev[questionId] || [];
+      let newAns = {};
       if (isMultipleChoice) {
         if (currentAns.includes(optionKey)) {
-          return { ...prev, [questionId]: currentAns.filter(x => x !== optionKey) };
+          newAns = { ...prev, [questionId]: currentAns.filter(x => x !== optionKey) };
         } else {
-          return { ...prev, [questionId]: [...currentAns, optionKey] };
+          newAns = { ...prev, [questionId]: [...currentAns, optionKey] };
         }
       } else {
-        return { ...prev, [questionId]: [optionKey] };
+        newAns = { ...prev, [questionId]: [optionKey] };
       }
+
+      if (quizData && quizData.attempt_id) {
+        saveInProgressAnswers(quizData.attempt_id, newAns);
+      }
+      return newAns;
     });
   };
 
@@ -101,7 +110,7 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
     setIsTimerRunning(true);
     try {
       setLoading(true);
-      const data = await getQuizQuestions(lessonId);
+      const data = await getQuizQuestions(lessonId, true); // Force new attempt
       setQuizData(data);
     } catch (err) {
       setError(err.message);
@@ -254,64 +263,75 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
       </div>
 
       {/* 3. TAB 1: THÔNG TIN CHUNG (VIDEO TOP -> TEXT COLLAPSE -> QUIZ BUTTON) */}
-      {activeTab === 'intro' && (
-        <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-          <h2 className="text-xl font-black text-slate-800">
-            {lesson.location_name || lesson.province_name || lesson.name}
-            {lesson.subtitle && (
-              <span className="font-semibold text-slate-600"> — {lesson.subtitle}</span>
+      {activeTab === 'intro' && (() => {
+        const hasVideo = Boolean(lesson.intro_video_url && lesson.intro_video_url.trim());
+        const hasText = Boolean(lesson.intro_text && lesson.intro_text.trim());
+
+        return (
+          <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+            <h2 className="text-xl font-black text-slate-800">
+              {lesson.location_name || lesson.province_name || lesson.name}
+              {lesson.subtitle && (
+                <span className="font-semibold text-slate-600"> — {lesson.subtitle}</span>
+              )}
+            </h2>
+
+            {/* 1. VIDEO (Hide completely if intro_video_url is empty) */}
+            {hasVideo && (
+              <div className="aspect-video w-full max-h-[320px] rounded-xl overflow-hidden border border-slate-200 bg-black">
+                <iframe
+                  src={formatYoutubeEmbedUrl(lesson.intro_video_url)}
+                  title="Lesson Video"
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              </div>
             )}
-          </h2>
 
-          {/* ITEM A: VIDEO AT THE TOP (HIDE TOTALLY IF EMPTY) */}
-          {Boolean(lesson.intro_video_url && lesson.intro_video_url.trim()) && (
-            <div className="aspect-video w-full max-h-[320px] rounded-xl overflow-hidden border border-slate-200 bg-black">
-              <iframe
-                src={formatYoutubeEmbedUrl(lesson.intro_video_url)}
-                title="Lesson Video"
-                className="w-full h-full"
-                allowFullScreen
-              />
-            </div>
-          )}
+            {/* 2. TEXT UNDER VIDEO (Hide completely if intro_text is empty) */}
+            {hasText && (
+              <div>
+                <div 
+                  className="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200"
+                  style={hasVideo && !showFullText ? {
+                    display: '-webkit-box',
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  } : {}}
+                >
+                  {lesson.intro_text}
+                </div>
 
-          {/* ITEM B: TEXT UNDER VIDEO (HIDE TOTALLY IF EMPTY) */}
-          {Boolean(lesson.intro_text && lesson.intro_text.trim()) && (
-            <div>
-              <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line bg-slate-50 p-4 rounded-xl border border-slate-200">
-                {showFullText ? lesson.intro_text : (
-                  lesson.intro_text.length > 180 
-                    ? `${lesson.intro_text.substring(0, 180)}...` 
-                    : lesson.intro_text
+                {/* If video exists and text length > 160, show "Xem thêm" / "Thu gọn" button */}
+                {hasVideo && lesson.intro_text.length > 160 && (
+                  <button
+                    onClick={() => setShowFullText(!showFullText)}
+                    className="mt-2 text-xs font-extrabold text-[#58cc02] hover:underline flex items-center gap-1 focus:outline-none"
+                  >
+                    {showFullText ? (
+                      <>Thu gọn <ChevronUp className="w-3.5 h-3.5" /></>
+                    ) : (
+                      <>Xem thêm <ChevronDown className="w-3.5 h-3.5" /></>
+                    )}
+                  </button>
                 )}
               </div>
-              {lesson.intro_text.length > 180 && (
-                <button
-                  onClick={() => setShowFullText(!showFullText)}
-                  className="mt-1.5 text-xs font-extrabold text-[#58cc02] hover:underline flex items-center gap-1 focus:outline-none"
-                >
-                  {showFullText ? (
-                    <>Thu gọn <ChevronUp className="w-3.5 h-3.5" /></>
-                  ) : (
-                    <>Xem thêm <ChevronDown className="w-3.5 h-3.5" /></>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
+            )}
 
-          {/* ITEM C: BUTTON "BẮT ĐẦU QUIZ NGAY" */}
-          <div className="pt-2 flex justify-end">
-            <button
-              onClick={() => setActiveTab('quiz')}
-              className="bg-[#58cc02] hover:bg-[#46a302] text-white font-extrabold px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 text-sm"
-            >
-              Bắt đầu quiz ngay
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* 3. BUTTON "BẮT ĐẦU QUIZ NGAY" */}
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setActiveTab('quiz')}
+                className="bg-[#58cc02] hover:bg-[#46a302] text-white font-extrabold px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 text-sm shadow-md hover:shadow-lg"
+              >
+                Bắt đầu quiz ngay
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 2: QUIZ EXERCISES */}
       {activeTab === 'quiz' && (

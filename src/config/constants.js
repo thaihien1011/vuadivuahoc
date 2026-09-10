@@ -18,104 +18,173 @@ export const WARDROBE_ITEMS_CATALOG = [
   // HAIR SLOT (Tóc)
   {
     id: 'wi_hair_001',
+    fileName: 'wi_hair_001.png',
     slot: WARDROBE_SLOTS.HAIR,
-    name: 'Tóc Thám Hiểm Ngắn',
+    name: 'Tóc cắt cao',
     star_cost: 5,
+    gender_target: 'male',
     iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/hair/wi_hair_001.png',
     svgPath: 'hair_short'
   },
   {
     id: 'wi_hair_002',
+    fileName: 'wi_hair_002.png',
     slot: WARDROBE_SLOTS.HAIR,
-    name: 'Tóc Đuôi Ngựa Năng Động',
+    name: 'Tóc vàng cao',
     star_cost: 5,
+    gender_target: 'female',
     iconColor: '#ec4899',
+    imagePath: '/assets/avatar/hair/wi_hair_002.png',
     svgPath: 'hair_ponytail'
   },
   {
     id: 'wi_hair_003',
+    fileName: 'wi_hair_003.png',
     slot: WARDROBE_SLOTS.HAIR,
-    name: 'Tóc Mũ Lưỡi Trai Sử Địa',
+    name: 'Tóc xoăn dài',
     star_cost: 5,
-    iconColor: '#f59e0b',
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/hair/wi_hair_003.png',
     svgPath: 'hair_cap'
+  },
+  {
+    id: 'wi_hair_004',
+    fileName: 'wi_hair_004.png',
+    slot: WARDROBE_SLOTS.HAIR,
+    name: 'Tóc vuốt keo',
+    star_cost: 5,
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/hair/wi_hair_004.png',
+    svgPath: 'hair_curly'
   },
 
   // TOP SLOT (Áo)
   {
     id: 'wi_top_001',
+    fileName: 'wi_top_001.png',
     slot: WARDROBE_SLOTS.TOP,
-    name: 'Áo Phông Sử - Địa Phiêu Lưu',
+    name: 'Áo đồng phục thể thao',
     star_cost: 5,
-    iconColor: '#6366f1',
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/top/wi_top_001.png',
     svgPath: 'top_adventure'
   },
   {
     id: 'wi_top_002',
+    fileName: 'wi_top_002.png',
     slot: WARDROBE_SLOTS.TOP,
-    name: 'Áo Ngũ Thân Truyền Thống',
+    name: 'Áo len dài tay',
     star_cost: 5,
-    iconColor: '#10b981',
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/top/wi_top_002.png',
     svgPath: 'top_traditional'
   },
   {
     id: 'wi_top_003',
+    fileName: 'wi_top_003.png',
     slot: WARDROBE_SLOTS.TOP,
-    name: 'Áo Hoodie Chiến Sĩ',
+    name: 'Áo kaki dài tay',
     star_cost: 5,
-    iconColor: '#8b5cf6',
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/top/wi_top_003.png',
     svgPath: 'top_hoodie'
   },
 
   // BOTTOM / SKIRT SLOT (Quần / Váy)
   {
     id: 'wi_bottom_001',
+    fileName: 'wi_bottom_001.png',
     slot: WARDROBE_SLOTS.BOTTOM_OR_SKIRT,
-    name: 'Quần Khám Phá Xanh',
+    name: 'Quần đồng phục thể thao',
     star_cost: 5,
-    iconColor: '#0ea5e9',
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/bottom/wi_bottom_001.png',
     svgPath: 'bottom_jeans'
   },
   {
     id: 'wi_bottom_002',
+    fileName: 'wi_bottom_002.png',
     slot: WARDROBE_SLOTS.BOTTOM_OR_SKIRT,
-    name: 'Váy Xếp Ly Năng Động',
+    name: 'Váy xếp li ngắn',
     star_cost: 5,
-    iconColor: '#f43f5e',
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/bottom/wi_bottom_002.png',
     svgPath: 'skirt_pleated'
   },
   {
     id: 'wi_bottom_003',
+    fileName: 'wi_bottom_003.png',
     slot: WARDROBE_SLOTS.BOTTOM_OR_SKIRT,
-    name: 'Quần Short Thể Thao',
+    name: 'Quần jean thụng',
     star_cost: 5,
-    iconColor: '#84cc16',
-    svgPath: 'bottom_shorts'
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/bottom/wi_bottom_003.png',
+    svgPath: 'bottom_kaki'
+  },
+  {
+    id: 'wi_bottom_004',
+    fileName: 'wi_bottom_004.png',
+    slot: WARDROBE_SLOTS.BOTTOM_OR_SKIRT,
+    name: 'Quần kaki dài',
+    star_cost: 5,
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/bottom/wi_bottom_004.png',
+    svgPath: 'skirt_long'
   },
 
-  // FOOTWEAR SLOT (Giày / Ủng / Dép)
+  // FOOTWEAR SLOT (Giày)
   {
     id: 'wi_shoes_001',
+    fileName: 'wi_shoes_001.png',
     slot: WARDROBE_SLOTS.FOOTWEAR,
-    name: 'Giày Thể Thao Thám Hiểm',
+    name: 'Giày Thể Thao Xanh',
     star_cost: 5,
-    iconColor: '#06b6d4',
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/footwear/wi_shoes_001.png',
     svgPath: 'shoes_sneakers'
   },
   {
     id: 'wi_shoes_002',
+    fileName: 'wi_shoes_002.png',
     slot: WARDROBE_SLOTS.FOOTWEAR,
-    name: 'Ủng Hành Quân Sử Địa',
+    name: 'Bốt cổ cao',
     star_cost: 5,
-    iconColor: '#d97706',
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/footwear/wi_shoes_002.png',
     svgPath: 'shoes_boots'
   },
   {
     id: 'wi_shoes_003',
+    fileName: 'wi_shoes_003.png',
     slot: WARDROBE_SLOTS.FOOTWEAR,
-    name: 'Dép Cao Su Bác Hồ',
+    name: 'Giày sneaker',
     star_cost: 5,
-    iconColor: '#65a30d',
-    svgPath: 'shoes_sandals'
+    gender_target: 'female',
+    iconColor: '#ec4899',
+    imagePath: '/assets/avatar/footwear/wi_shoes_003.png',
+    svgPath: 'shoes_pink'
+  },
+  {
+    id: 'wi_shoes_004',
+    fileName: 'wi_shoes_004.png',
+    slot: WARDROBE_SLOTS.FOOTWEAR,
+    name: 'Giày Thám Hiểm Cổ Cao',
+    star_cost: 5,
+    gender_target: 'male',
+    iconColor: '#3b82f6',
+    imagePath: '/assets/avatar/footwear/wi_shoes_004.png',
+    svgPath: 'shoes_high'
   }
 ];

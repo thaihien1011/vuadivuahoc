@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, ShieldCheck } from 'lucide-react';
+import { LogIn, User, Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { setCurrentAuthUser } from '../services/api';
+import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function TeacherLoginPage({ onLoginSuccess }) {
   const [email, setEmail] = useState('hoa.nguyen@thcstranphu.edu.vn');
   const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -56,13 +58,21 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => setPassword(removeVietnameseTones(e.target.value))}
               placeholder="Nhập mật khẩu..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-purple-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-9 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-purple-500 font-mono"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+              title={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 

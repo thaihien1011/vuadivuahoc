@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, Sparkles, Shield, Compass, BookOpen } from 'lucide-react';
+import { LogIn, User, Lock, Sparkles, Shield, Compass, BookOpen, Eye, EyeOff } from 'lucide-react';
 import { setCurrentAuthUser } from '../services/api';
+import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [role, setRole] = useState('student'); // 'student' | 'teacher'
-  const [username, setUsername] = useState('nguyentramy');
+  const [username, setUsername] = useState('nguyenvana');
   const [password, setPassword] = useState('123456');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -65,7 +67,7 @@ export default function LoginPage({ onLoginSuccess }) {
         <div className="grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
           <button
             type="button"
-            onClick={() => { setRole('student'); setUsername('nguyentramy'); }}
+            onClick={() => { setRole('student'); setUsername('nguyenvana'); }}
             className={`py-2.5 text-xs font-black rounded-xl transition-all ${
               role === 'student'
                 ? 'bg-emerald-500 text-white shadow-sm border-b-2 border-emerald-700'
@@ -99,7 +101,8 @@ export default function LoginPage({ onLoginSuccess }) {
               <input
                 type="text"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={e => setUsername(removeVietnameseTones(e.target.value).toLowerCase())}
+                placeholder="VD: nguyenvana"
                 className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 font-mono font-bold"
                 required
               />
@@ -111,12 +114,20 @@ export default function LoginPage({ onLoginSuccess }) {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 font-mono font-bold"
+                onChange={e => setPassword(removeVietnameseTones(e.target.value))}
+                className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl py-3 pl-10 pr-10 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 font-mono font-bold"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                title={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -134,20 +145,32 @@ export default function LoginPage({ onLoginSuccess }) {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => handleQuickStudentLogin('st_hs001', 'Nguyễn Trà My', 'nguyentramy')}
-              className="p-3 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
+              onClick={() => handleQuickStudentLogin('st_nth001', 'Nguyen Thai Hien', 'nguyenthaihien')}
+              className="p-3 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-left hover:bg-emerald-100 transition-colors col-span-2"
             >
-              <div className="text-xs font-black text-sky-800">Nguyễn Trà My</div>
-              <div className="text-[10px] text-slate-500 font-bold">Lớp 8A1 (15 Stars)</div>
+              <div className="text-xs font-black text-emerald-900 flex items-center justify-between">
+                <span>👦 Nguyen Thai Hien (Test User)</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md font-bold">nguyenthaihien</span>
+              </div>
+              <div className="text-[10px] text-slate-600 font-bold">Không liên kết • Mật khẩu: pass123</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickStudentLogin('st_hs001', 'Nguyễn Văn A', 'nguyenvana')}
+              className="p-2.5 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
+            >
+              <div className="text-xs font-black text-sky-800">Nguyễn Văn A</div>
+              <div className="text-[10px] text-slate-500 font-bold">Lớp 8/8 (15 Stars)</div>
             </button>
 
             <button
               type="button"
               onClick={() => handleQuickStudentLogin('st_hs002', 'Trần Nam', 'trannam8a1')}
-              className="p-3 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
+              className="p-2.5 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
             >
               <div className="text-xs font-black text-sky-800">Trần Nam</div>
-              <div className="text-[10px] text-slate-500 font-bold">Lớp 8A1 (8 Stars)</div>
+              <div className="text-[10px] text-slate-500 font-bold">Lớp 8/8 (8 Stars)</div>
             </button>
           </div>
         </div>

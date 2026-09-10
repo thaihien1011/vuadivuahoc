@@ -596,6 +596,7 @@ export default function InteractiveMap({ lessons = [], lockedScores = [], onSele
               })()}
 
               <button
+                data-testid={`btn-quiz-popup-${selectedLesson.id}`}
                 onClick={() => onSelectLesson(selectedLesson.id)}
                 className="w-full btn-duo-green py-2 text-xs font-extrabold gap-2"
               >
@@ -608,57 +609,113 @@ export default function InteractiveMap({ lessons = [], lockedScores = [], onSele
       )}
 
       {/* TAB 2: DANH SÁCH CHẶNG BÀI HỌC (LIST VIEW) */}
-      {activeSubTab === 'list' && (
-        <div className="space-y-3 pt-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredLessons.map((lesson) => {
-              const scoreInfo = getScoreForLesson(lesson.id);
-              const status = getLocationStatus(lesson.id);
+      {activeSubTab === 'list' && (() => {
+        const attempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]');
+        const currentUser = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
+        const studentAttempts = attempts.filter(a => a.student_id === currentUser?.uid);
 
-              return (
-                <div key={lesson.id} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 hover:border-emerald-400 transition-all shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <span className="font-bold text-xs text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
-                      {lesson.region}
-                    </span>
+        const listLessons = filteredLessons
+          .filter(lesson => {
+            const status = getLocationStatus(lesson.id);
+            const hasAttempt = studentAttempts.some(a => a.lesson_id === lesson.id);
+            const scoreInfo = getScoreForLesson(lesson.id);
+            // REQUIREMENT 3: Only display lessons where student HAS clicked to do quiz
+            return status !== 'not_started' || hasAttempt || scoreInfo != null;
+          })
+          .sort((a, b) => {
+            const statusA = getLocationStatus(a.id);
+            const statusB = getLocationStatus(b.id);
 
-                    <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
-                      status === 'completed' 
-                        ? 'bg-[#58cc02] text-white' 
-                        : status === 'learning'
-                        ? 'bg-[#f59e0b] text-white'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}>
-                      {status === 'completed' 
-                        ? `Đã hoàn thành (${scoreInfo.score}đ)` 
-                        : status === 'learning'
-                        ? `Đang thực hiện (${scoreInfo.score}đ)`
-                        : 'Chưa bắt đầu'}
-                    </span>
+            // Primary order: 'learning' (in_progress) on top (1), 'completed' below (2)
+            const rankA = statusA === 'learning' ? 1 : 2;
+            const rankB = statusB === 'learning' ? 1 : 2;
+
+            if (rankA !== rankB) {
+              return rankA - rankB;
+            }
+
+            // Secondary order: started_at timestamp descending (newest first)
+            const attemptsA = studentAttempts.filter(att => att.lesson_id === a.id);
+            const attemptsB = studentAttempts.filter(att => att.lesson_id === b.id);
+
+            const timeA = attemptsA.length > 0
+              ? Math.max(...attemptsA.map(att => new Date(att.started_at || 0).getTime()))
+              : (getScoreForLesson(a.id)?.submitted_at ? new Date(getScoreForLesson(a.id).submitted_at).getTime() : 0);
+
+            const timeB = attemptsB.length > 0
+              ? Math.max(...attemptsB.map(att => new Date(att.started_at || 0).getTime()))
+              : (getScoreForLesson(b.id)?.submitted_at ? new Date(getScoreForLesson(b.id).submitted_at).getTime() : 0);
+
+            return timeB - timeA;
+          });
+
+        if (listLessons.length === 0) {
+          return (
+            <div className="bg-white border border-slate-200 rounded-xl p-8 text-center space-y-3 my-4 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-amber-500 flex items-center justify-center mx-auto">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black text-slate-800">Chưa Có Bài Quiz Nào Đang Thực Hiện</h3>
+              <p className="text-xs font-semibold text-slate-500 max-w-sm mx-auto">
+                Hãy chuyển sang tab <span className="font-extrabold text-[#58cc02]">Bản đồ</span>, chọn một địa phương bất kỳ và bấm vào <span className="font-extrabold text-sky-600">Vào bài kiểm tra</span> để khởi tạo hành trình!
+              </p>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {listLessons.map((lesson) => {
+                const scoreInfo = getScoreForLesson(lesson.id);
+                const status = getLocationStatus(lesson.id);
+
+                return (
+                  <div key={lesson.id} data-testid={`lesson-card-${lesson.id}`} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 hover:border-emerald-400 transition-all shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <span className="font-bold text-xs text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                        {lesson.region}
+                      </span>
+
+                      <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
+                        status === 'completed' 
+                          ? 'bg-[#58cc02] text-white' 
+                          : status === 'learning'
+                          ? 'bg-[#f59e0b] text-white'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {status === 'completed' 
+                          ? `Đã hoàn thành (${scoreInfo?.score || 0}đ)` 
+                          : status === 'learning'
+                          ? `Đang thực hiện ${scoreInfo?.score ? `(${scoreInfo.score}đ)` : ''}`
+                          : 'Chưa bắt đầu'}
+                      </span>
+                    </div>
+
+                    <h3 className="font-extrabold text-slate-900 text-sm">
+                      {lesson.location_name || lesson.province_name || lesson.name}
+                      {lesson.subtitle && (
+                        <span className="font-normal text-slate-600"> — {lesson.subtitle}</span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{lesson.intro_text}</p>
+
+                    <button
+                      data-testid={`btn-quiz-${lesson.id}`}
+                      onClick={() => onSelectLesson(lesson.id)}
+                      className="w-full btn-duo-green py-2 text-xs gap-2"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      Tiếp tục làm bài
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  <h3 className="font-extrabold text-slate-900 text-sm">
-                    {lesson.location_name || lesson.province_name || lesson.name}
-                    {lesson.subtitle && (
-                      <span className="font-normal text-slate-600"> — {lesson.subtitle}</span>
-                    )}
-                  </h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{lesson.intro_text}</p>
-
-                  <button
-                    onClick={() => onSelectLesson(lesson.id)}
-                    className="w-full btn-duo-green py-2 text-xs gap-2"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    Bài kiểm tra
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

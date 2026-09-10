@@ -6,7 +6,7 @@ import WardrobeShop from '../components/wardrobe/WardrobeShop';
 import LeaderboardTable from '../components/leaderboard/LeaderboardTable';
 import DuolingoLeftSidebar from '../components/navigation/DuolingoLeftSidebar';
 import StudentProfilePage from './StudentProfilePage';
-import { getCurrentAuthUser } from '../services/api';
+import { getCurrentAuthUser, getAllLessons } from '../services/api';
 
 export default function StudentDashboardPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('map'); // 'map' (Hành trình) | 'wardrobe' | 'leaderboard' | 'profile'
@@ -20,13 +20,16 @@ export default function StudentDashboardPage({ onLogout }) {
     loadStudentState();
   }, [selectedLessonId, activeTab]);
 
-  const loadStudentState = () => {
+  const loadStudentState = async () => {
     const user = getCurrentAuthUser();
     const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
     const currentSt = students.find(s => s.id === user?.uid);
 
-    setStudentData(currentSt || { name: user?.name || 'Nguyễn Trà My', class: 'Lớp 8A1', current_star: 0 });
-    setLessons(JSON.parse(localStorage.getItem('vdvh_lessons') || '[]'));
+    setStudentData(currentSt || { name: user?.name || 'Nguyễn Văn A', class: 'Lớp 8A1', current_star: 0 });
+    
+    // Fetch live lessons from Cloud Firestore
+    const liveLessons = await getAllLessons();
+    setLessons(liveLessons);
 
     const allLocked = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]');
     const studentLocked = allLocked.filter(ls => ls.student_id === user?.uid);

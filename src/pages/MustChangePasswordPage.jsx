@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Lock, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Lock, ShieldAlert, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { changeStudentPassword } from '../services/api';
+import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function MustChangePasswordPage({ onPasswordChanged }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -46,13 +49,21 @@ export default function MustChangePasswordPage({ onPasswordChanged }) {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
               <input
-                type="password"
+                type={showNewPassword ? "text" : "password"}
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-white/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                onChange={e => setNewPassword(removeVietnameseTones(e.target.value))}
+                className="w-full bg-slate-900 border border-white/20 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
                 required
                 minLength={6}
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-200 focus:outline-none"
+                title={showNewPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -61,12 +72,20 @@ export default function MustChangePasswordPage({ onPasswordChanged }) {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                className="w-full bg-slate-900 border border-white/20 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
+                onChange={e => setConfirmPassword(removeVietnameseTones(e.target.value))}
+                className="w-full bg-slate-900 border border-white/20 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-amber-400 font-mono"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-200 focus:outline-none"
+                title={showConfirmPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

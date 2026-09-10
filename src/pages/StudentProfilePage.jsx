@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { User, Star, Award, CheckCircle2, Save, GraduationCap, Palette } from 'lucide-react';
 import AvatarCanvas from '../components/avatar/AvatarCanvas';
 import { THEMES, getCurrentTheme, applyTheme } from '../services/theme';
+import { syncStudentToFirestore } from '../services/api';
 
 export default function StudentProfilePage({ studentData, onUpdateStudent }) {
-  const [name, setName] = useState(studentData?.name || 'Nguyễn Trà My');
+  const [name, setName] = useState(studentData?.name || 'Nguyễn Văn A');
   const [className, setClassName] = useState(studentData?.class || 'Lớp 8A1');
+  const [gender, setGender] = useState(studentData?.gender || 'female');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [activeTheme, setActiveTheme] = useState(getCurrentTheme());
 
@@ -32,30 +34,55 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
     const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
     const studentIdx = students.findIndex(s => s.id === studentData?.id);
 
+    const bodyType = gender === 'female' ? 'body_female' : 'base';
+
+    let updatedStudentObj = null;
     if (studentIdx !== -1) {
       students[studentIdx].name = name.trim();
       students[studentIdx].class = className.trim();
+      students[studentIdx].gender = gender;
+      students[studentIdx].body = bodyType;
+      updatedStudentObj = students[studentIdx];
       localStorage.setItem('vdvh_students', JSON.stringify(students));
+    } else {
+      updatedStudentObj = {
+        id: studentData?.id || 'st_hs001',
+        name: name.trim(),
+        username: studentData?.username || 'nguyenvana',
+        class: className.trim(),
+        gender: gender,
+        body: bodyType,
+        current_star: studentData?.current_star || 0,
+        avatar_config: studentData?.avatar_config || {}
+      };
     }
 
     const currentAuth = JSON.parse(localStorage.getItem('vdvh_current_auth_user') || '{}');
-    currentAuth.name = name.trim();
-    localStorage.setItem('vdvh_current_auth_user', JSON.stringify(currentAuth));
+    if (currentAuth.uid === (studentData?.id || 'st_hs001')) {
+      currentAuth.name = name.trim();
+      currentAuth.gender = gender;
+      currentAuth.body = bodyType;
+      localStorage.setItem('vdvh_current_auth_user', JSON.stringify(currentAuth));
+    }
 
-    setSaveSuccessMsg('Đã lưu thông tin mới.');
-    if (onUpdateStudent) onUpdateStudent();
+    syncStudentToFirestore(updatedStudentObj);
 
+    if (onUpdateStudent) {
+      onUpdateStudent(updatedStudentObj);
+    }
+
+    setSaveSuccessMsg('Đã cập nhật thông tin thành công!');
     setTimeout(() => {
       setSaveSuccessMsg('');
     }, 3000);
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 py-2">
+    <div className="max-w-2xl mx-auto space-y-6 py-2">
       {/* HEADER TITLE */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shrink-0">
+          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-sm shrink-0">
             <User className="w-6 h-6" />
           </div>
           <div>
@@ -63,9 +90,14 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
           </div>
         </div>
 
-        <span className="badge theme-profile-badge font-extrabold text-xs px-2.5 py-1">
-          {studentData?.username || 'nguyentramy'}
-        </span>
+        <div className="text-right">
+          <div className="font-black text-sm text-slate-900 leading-tight">
+            {studentData?.name || name || 'Nguyễn Văn A'}
+          </div>
+          <span className="badge theme-profile-badge font-mono font-bold text-[11px] px-2.5 py-0.5 mt-0.5 inline-block">
+            ID: {studentData?.id || 'st_hs001'}
+          </span>
+        </div>
       </div>
 
       {saveSuccessMsg && (
@@ -143,7 +175,7 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
         <div className="flex items-center gap-3.5 pb-4 border-b border-slate-200">
           <AvatarCanvas avatarConfig={studentData?.avatar_config} size={64} className="shrink-0" />
           <div>
-            <h3 className="text-base font-extrabold text-slate-900">{studentData?.name || 'Nguyễn Trà My'}</h3>
+            <h3 className="text-base font-extrabold text-slate-900">{studentData?.name || 'Nguyễn Văn A'}</h3>
             <p className="text-xs font-bold text-slate-500">{studentData?.class || 'Lớp 8A1'} • Trường THCS Trần Phú</p>
           </div>
         </div>
@@ -171,15 +203,46 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
               Lớp
             </label>
             <div className="relative">
-              <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-              <input
-                type="text"
+              <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 z-10" />
+              <select
                 value={className}
                 onChange={e => setClassName(e.target.value)}
-                placeholder="Nhập lớp học..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-sky-500"
-                required
-              />
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-sky-500 appearance-none cursor-pointer"
+              >
+                <option value="Lớp 8/8">Lớp 8/8</option>
+                <option value="Không liên kết">Không liên kết</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-extrabold text-slate-700 mb-1 block">
+              Giới tính & Nhân vật (Body)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setGender('male')}
+                className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+                  gender === 'male'
+                    ? 'bg-sky-50 border-sky-500 text-sky-700 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>👦 Nam (Body Base)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGender('female')}
+                className={`p-2.5 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all ${
+                  gender === 'female'
+                    ? 'bg-pink-50 border-pink-500 text-pink-700 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span>👧 Nữ (Body Female)</span>
+              </button>
             </div>
           </div>
 

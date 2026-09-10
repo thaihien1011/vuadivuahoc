@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, Compass, UserPlus } from 'lucide-react';
+import { LogIn, User, Lock, Compass, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { setCurrentAuthUser } from '../services/api';
 import { useActiveTheme } from '../services/theme';
+import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister }) {
-  const [username, setUsername] = useState('nguyentramy');
-  const [password, setPassword] = useState('123456');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { logoUrl } = useActiveTheme();
 
   const handleLogin = (e) => {
@@ -58,9 +60,9 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
             <input
               type="text"
               value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="Nhập tên đăng nhập..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-[#58cc02]"
+              onChange={e => setUsername(removeVietnameseTones(e.target.value).toLowerCase())}
+              placeholder="VD: nguyenvana"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-[#58cc02] font-mono"
               required
             />
           </div>
@@ -71,13 +73,21 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
           <div className="relative">
             <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => setPassword(removeVietnameseTones(e.target.value))}
               placeholder="Nhập mật khẩu..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-[#58cc02]"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-9 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-[#58cc02] font-mono"
               required
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+              title={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 

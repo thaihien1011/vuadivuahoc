@@ -78,7 +78,7 @@ export default function DuolingoLeftSidebar({
           <AvatarCanvas avatarConfig={studentData?.avatar_config} size={36} />
           <div className="text-left min-w-0 flex-1">
             <div className="font-extrabold text-xs sidebar-user-name truncate">
-              {studentData?.name || 'Nguyễn Trà My'}
+              {studentData?.name || 'Nguyễn Văn A'}
             </div>
             <div className="text-[10px] sidebar-user-subtext font-bold truncate">
               {studentData?.class || 'Lớp 8A1'} • ⭐ {studentData?.current_star || 0}

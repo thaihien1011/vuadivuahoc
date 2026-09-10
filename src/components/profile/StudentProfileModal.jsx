@@ -34,7 +34,7 @@ export default function StudentProfileModal({ studentData, onClose, onLogout }) 
 
         <div className="pt-2">
           <AvatarCanvas avatarConfig={studentData?.avatar_config} size={100} className="mx-auto mb-2" />
-          <h3 className="text-xl font-black text-slate-800">{studentData?.name || 'Nguyễn Trà My'}</h3>
+          <h3 className="text-xl font-black text-slate-800">{studentData?.name || 'Nguyễn Văn A'}</h3>
           <span className="badge bg-sky-100 text-sky-800 border border-sky-300 font-extrabold text-xs">
             Lớp 8A1 • Trường THCS Trần Phú
           </span>

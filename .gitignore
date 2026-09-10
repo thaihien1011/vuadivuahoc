@@ -25,4 +25,5 @@ firebase-credentials.json
 
 # Scratch & Temporary files
 scratch/
+.firebase/
 ~$*.xlsx
