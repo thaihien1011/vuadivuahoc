@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Key, RefreshCw, CheckCircle2, AlertCircle, FileSpreadsheet, 
-  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy
+  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy, Database, Plus, Edit3, Save
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { adminResetPassword, syncQuestions, importExcelArrayBuffer } from '../../services/api';
+import { 
+  adminResetPassword, syncQuestions, importExcelArrayBuffer,
+  getClassesTable, saveClassesTable, getWardrobeCatalogTable, saveWardrobeCatalogTable, seedFirestoreTables
+} from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 import { INITIAL_LESSONS } from '../../services/mockData';
 
 export default function TeacherDashboard() {
-  const [activeTab, setActiveTab] = useState('students'); // 'students' | 'sync' | 'map'
+  const [activeTab, setActiveTab] = useState('students'); // 'students' | 'classes' | 'wardrobe_catalog' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
+  const [classesList, setClassesList] = useState([]);
+  const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
   const [selectedClass, setSelectedClass] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [resetModalData, setResetModalData] = useState(null);
   const [sheetId, setSheetId] = useState('1ntVNq7XVoVsSlQ0Mp_itoTTCt_VQxGQY');
   const [syncStatus, setSyncStatus] = useState(null);
   const [syncing, setSyncing] = useState(false);
+
+  // New Class Form State
+  const [newClassName, setNewClassName] = useState('');
+
+  // Editing Wardrobe Item State
+  const [editingItem, setEditingItem] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -25,6 +36,47 @@ export default function TeacherDashboard() {
   const loadData = () => {
     const list = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
     setStudents(list);
+    setClassesList(getClassesTable());
+    setWardrobeCatalog(getWardrobeCatalogTable());
+  };
+
+  const handleAddClass = (e) => {
+    e.preventDefault();
+    if (!newClassName.trim()) return;
+    const newCls = {
+      id: 'cls_' + Date.now(),
+      name: newClassName.trim(),
+      grade: 8,
+      created_at: new Date().toISOString()
+    };
+    const updated = [...classesList, newCls];
+    setClassesList(updated);
+    saveClassesTable(updated);
+    setNewClassName('');
+    alert(`Đã thêm lớp "${newCls.name}" thành công vào Bảng Classes!`);
+  };
+
+  const handleSaveItemEdit = (e) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    const updated = wardrobeCatalog.map(item => item.id === editingItem.id ? editingItem : item);
+    setWardrobeCatalog(updated);
+    saveWardrobeCatalogTable(updated);
+    setEditingItem(null);
+    alert(`Đã cập nhật thông tin vật phẩm "${editingItem.name}" thành công!`);
+  };
+
+  const handleSeedDatabase = async () => {
+    try {
+      setSyncing(true);
+      setSyncStatus(null);
+      const res = await seedFirestoreTables();
+      setSyncStatus(res);
+    } catch (err) {
+      setSyncStatus({ success: false, error: err.message });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleResetPass = async (studentId, studentName) => {
@@ -188,7 +240,7 @@ export default function TeacherDashboard() {
       </div>
 
       {/* MINIMALIST TEXT SUB-TABS */}
-      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-8 shadow-sm rounded-xl overflow-x-auto">
+      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-6 shadow-sm rounded-xl overflow-x-auto">
         <button
           onClick={() => setActiveTab('students')}
           className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 ${
@@ -197,7 +249,29 @@ export default function TeacherDashboard() {
               : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
           }`}
         >
-          Quản Lý Lớp Học ({students.length})
+          Học Sinh ({students.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('classes')}
+          className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 ${
+            activeTab === 'classes'
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
+          }`}
+        >
+          Bảng Lớp Học ({classesList.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('wardrobe_catalog')}
+          className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 ${
+            activeTab === 'wardrobe_catalog'
+              ? 'text-purple-600 border-b-2 border-purple-600'
+              : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
+          }`}
+        >
+          Bảng Trang Phục Avatar ({wardrobeCatalog.length})
         </button>
 
         <button
@@ -208,7 +282,7 @@ export default function TeacherDashboard() {
               : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
           }`}
         >
-          Đồng Bộ Ngân Hàng Câu Hỏi
+          Đồng Bộ Database
         </button>
 
         <button
@@ -220,7 +294,7 @@ export default function TeacherDashboard() {
           }`}
         >
           <Target className="w-3.5 h-3.5" />
-          Hiệu Chỉnh Tọa Độ Bản Đồ
+          Tọa Độ Bản Đồ
         </button>
       </div>
 
@@ -310,9 +384,199 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* TAB 2: ĐỒNG BỘ NẠP FILE EXCEL & GOOGLE SHEET */}
+      {/* TAB 2: QUẢN LÝ BẢNG LỚP HỌC (CLASSES TABLE) */}
+      {activeTab === 'classes' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Quản lý Bảng Lớp Học (Classes Table)</h3>
+              <p className="text-xs text-slate-500">Khởi tạo và cập nhật danh sách lớp học trong cơ sở dữ liệu hệ thống</p>
+            </div>
+
+            <form onSubmit={handleAddClass} className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Nhập tên lớp mới (vd: 8/8)..."
+                value={newClassName}
+                onChange={e => setNewClassName(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500 font-bold"
+              />
+              <button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-4 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm Lớp</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-900 font-extrabold uppercase border-b border-slate-200">
+                <tr>
+                  <th className="p-3">Mã Lớp (ID)</th>
+                  <th className="p-3">Tên Lớp</th>
+                  <th className="p-3">Khối Học</th>
+                  <th className="p-3">Sĩ Số Học Sinh</th>
+                  <th className="p-3 text-right">Trạng Thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {classesList.map((cls) => {
+                  const studentCount = students.filter(s => (s.class || 'Không liên kết') === cls.name).length;
+                  return (
+                    <tr key={cls.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 font-mono text-slate-500">{cls.id}</td>
+                      <td className="p-3 font-extrabold text-slate-900">{cls.name}</td>
+                      <td className="p-3 font-bold text-slate-600">Khối {cls.grade || 8}</td>
+                      <td className="p-3 font-extrabold text-purple-700">{studentCount} học sinh</td>
+                      <td className="p-3 text-right">
+                        <span className="px-2 py-0.5 rounded-md font-extrabold text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Đang hoạt động
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: QUẢN LÝ BẢNG TRANG PHỤC AVATAR (AVATAR_ITEMS TABLE) */}
+      {activeTab === 'wardrobe_catalog' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">Bảng Quản Lý Trang Phục Avatar 2D (Avatar Items Table)</h3>
+              <p className="text-xs text-slate-500">Khai báo thông số vật phẩm, tên tiếng Việt, slot vị trí và giá sao quy đổi</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-900 font-extrabold uppercase border-b border-slate-200">
+                <tr>
+                  <th className="p-3">Mã (ID)</th>
+                  <th className="p-3">Ảnh Xem Trước</th>
+                  <th className="p-3">Tên Hiển Thị (Name)</th>
+                  <th className="p-3">Vị Trí (Slot)</th>
+                  <th className="p-3">Giới Tính Target</th>
+                  <th className="p-3">Giá Sao (Star Cost)</th>
+                  <th className="p-3 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {wardrobeCatalog.map((item) => {
+                  const isEditing = editingItem && editingItem.id === item.id;
+                  const thumbPath = `/assets/avatar/thumb/${item.slot}/${item.fileName}`;
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 font-mono text-slate-500">{item.id}</td>
+                      <td className="p-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-purple-200 p-1 flex items-center justify-center shadow-inner">
+                          <img src={thumbPath} alt={item.name} className="max-w-full max-h-full object-contain" />
+                        </div>
+                      </td>
+                      <td className="p-3 font-extrabold text-slate-900">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingItem.name}
+                            onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
+                            className="bg-white border border-purple-300 rounded px-2 py-1 text-xs font-extrabold text-slate-900"
+                          />
+                        ) : item.name}
+                      </td>
+                      <td className="p-3 font-bold text-slate-600 uppercase">{item.slot}</td>
+                      <td className="p-3">
+                        {isEditing ? (
+                          <select
+                            value={editingItem.gender_target}
+                            onChange={e => setEditingItem({ ...editingItem, gender_target: e.target.value })}
+                            className="bg-white border border-purple-300 rounded px-2 py-1 text-xs font-bold"
+                          >
+                            <option value="male">Nam (male)</option>
+                            <option value="female">Nữ (female)</option>
+                            <option value="all">Tất cả (all)</option>
+                          </select>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                            item.gender_target === 'male' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                            item.gender_target === 'female' ? 'bg-pink-50 text-pink-700 border border-pink-200' :
+                            'bg-purple-50 text-purple-700 border border-purple-200'
+                          }`}>
+                            {item.gender_target === 'male' ? 'Nam' : item.gender_target === 'female' ? 'Nữ' : 'Tất cả'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 font-extrabold text-amber-600">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={editingItem.star_cost}
+                            onChange={e => setEditingItem({ ...editingItem, star_cost: parseInt(e.target.value) || 0 })}
+                            className="bg-white border border-purple-300 rounded px-2 py-1 text-xs font-bold w-16 text-center"
+                          />
+                        ) : `${item.star_cost} ⭐`}
+                      </td>
+                      <td className="p-3 text-right">
+                        {isEditing ? (
+                          <button
+                            onClick={handleSaveItemEdit}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs inline-flex items-center gap-1 shadow-sm transition-all"
+                          >
+                            <Save className="w-3.5 h-3.5" /> Lưu
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEditingItem({ ...item })}
+                            className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-lg border border-purple-200 text-xs inline-flex items-center gap-1 transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" /> Sửa
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: ĐỒNG BỘ NẠP FILE EXCEL & CLOUD FIRESTORE SEEDER */}
       {activeTab === 'sync' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+          {/* MASTER FIRESTORE DATABASE SEEDER */}
+          <div className="border border-purple-200 bg-purple-50/50 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900">Khởi Tạo & Đồng Bộ Tất Cả Bảng Dữ Liệu Lên Cloud Firestore</h3>
+                <p className="text-xs text-slate-500">Đẩy dữ liệu chuẩn của các bảng `classes`, `students`, `lessons`, `questions`, `avatar_items` trực tiếp lên Cloud Database</p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={handleSeedDatabase}
+                disabled={syncing}
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-extrabold px-5 py-3 rounded-xl text-xs shadow-md hover:shadow-lg transition-all cursor-pointer"
+              >
+                <Database className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                <span>{syncing ? 'Đang khởi tạo Database...' : 'Khởi Tạo & Đồng Bộ Cloud Firestore'}</span>
+              </button>
+            </div>
+          </div>
+
+          <hr className="border-slate-200" />
+
           {/* UPLOAD FILE EXCEL THỰC TẾ */}
           <div className="border border-emerald-200 bg-emerald-50/50 rounded-2xl p-5 space-y-3">
             <div className="flex items-center gap-3">
@@ -364,7 +628,7 @@ export default function TeacherDashboard() {
             <button
               onClick={handleSyncSheet}
               disabled={syncing}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Google Sheet'}

@@ -691,4 +691,69 @@ export async function importExcelArrayBuffer(arrayBuffer) {
   }
 }
 
+/* ==========================================================================
+   TABLE MANAGEMENT & FIRESTORE SEEDER (NO HARDCODING)
+   ========================================================================== */
+
+// 1. Classes Table API
+export function getClassesTable() {
+  return getLocal(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
+}
+
+export function saveClassesTable(classList) {
+  setLocal(STORAGE_KEYS.CLASSES, classList);
+  return { success: true, count: classList.length };
+}
+
+// 2. Wardrobe Items Catalog Table API
+const WARDROBE_CATALOG_STORAGE_KEY = 'vdvh_wardrobe_catalog';
+
+export function getWardrobeCatalogTable() {
+  return getLocal(WARDROBE_CATALOG_STORAGE_KEY, WARDROBE_ITEMS_CATALOG);
+}
+
+export function saveWardrobeCatalogTable(catalog) {
+  setLocal(WARDROBE_CATALOG_STORAGE_KEY, catalog);
+  return { success: true, count: catalog.length };
+}
+
+// 3. Cloud Firestore Master Seeder
+export async function seedFirestoreTables() {
+  let seededCount = 0;
+  try {
+    // A. Seed Lessons
+    for (let l of INITIAL_LESSONS) {
+      await setDoc(doc(db, 'lessons', l.id), l, { merge: true });
+      seededCount++;
+    }
+    // B. Seed Questions
+    for (let q of INITIAL_QUESTIONS) {
+      await setDoc(doc(db, 'questions', q.id), q, { merge: true });
+      seededCount++;
+    }
+    // C. Seed Wardrobe Items Catalog Table
+    for (let item of WARDROBE_ITEMS_CATALOG) {
+      await setDoc(doc(db, 'avatar_items', item.id), item, { merge: true });
+      seededCount++;
+    }
+    // D. Seed Classes Table
+    for (let cls of INITIAL_CLASSES) {
+      await setDoc(doc(db, 'classes', cls.id), cls, { merge: true });
+      seededCount++;
+    }
+    return {
+      success: true,
+      seeded_records: seededCount,
+      message: `Đã khởi tạo & đồng bộ thành công ${seededCount} bản ghi lên Cloud Firestore!`
+    };
+  } catch (err) {
+    console.error("Firestore seed error:", err);
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+}
+
+
 
