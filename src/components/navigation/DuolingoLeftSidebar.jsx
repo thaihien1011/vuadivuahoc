@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  Compass, MapPin, ShoppingBag, Trophy, User, LogOut
+  Compass, MapPin, ShoppingBag, Trophy, User, LogOut, Sparkles
 } from 'lucide-react';
 import AvatarCanvas from '../avatar/AvatarCanvas';
 import { useActiveTheme } from '../../services/theme';
@@ -9,7 +9,8 @@ export default function DuolingoLeftSidebar({
   activeTab, 
   onTabChange, 
   studentData, 
-  onLogout 
+  onLogout,
+  onOpenAiAssistant
 }) {
   const { logoUrl } = useActiveTheme();
 
@@ -66,6 +67,16 @@ export default function DuolingoLeftSidebar({
             <User className="w-5 h-5 text-sky-500" />
             <span>HỒ SƠ HỌC SINH</span>
           </button>
+
+          {onOpenAiAssistant && (
+            <button
+              onClick={onOpenAiAssistant}
+              className="w-full duo-nav-link bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 mt-2"
+            >
+              <Sparkles className="w-5 h-5 text-sky-600 fill-sky-500 animate-pulse" />
+              <span className="font-extrabold text-sky-800">TRỢ LÝ AI RACCOON</span>
+            </button>
+          )}
         </nav>
       </div>
 

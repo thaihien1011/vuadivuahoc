@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, ShoppingBag, Trophy, LogOut, Flame, Star, Compass, User } from 'lucide-react';
+import { MapPin, ShoppingBag, Trophy, LogOut, Flame, Star, Compass, User, Sparkles } from 'lucide-react';
 import InteractiveMap from '../components/map/InteractiveMap';
 import QuizPlay from '../components/quiz/QuizPlay';
 import WardrobeShop from '../components/wardrobe/WardrobeShop';
 import LeaderboardTable from '../components/leaderboard/LeaderboardTable';
 import DuolingoLeftSidebar from '../components/navigation/DuolingoLeftSidebar';
 import StudentProfilePage from './StudentProfilePage';
+import RaccoonAiModal from '../components/ai/RaccoonAiModal';
 import { getCurrentAuthUser, getAllLessons } from '../services/api';
 
 export default function StudentDashboardPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('map'); // 'map' (Hành trình) | 'wardrobe' | 'leaderboard' | 'profile'
   const [selectedLessonId, setSelectedLessonId] = useState(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   const [studentData, setStudentData] = useState(null);
   const [lessons, setLessons] = useState([]);
@@ -48,6 +50,7 @@ export default function StudentDashboardPage({ onLogout }) {
         onTabChange={(tab) => { setSelectedLessonId(null); setActiveTab(tab); }}
         studentData={studentData}
         onLogout={onLogout}
+        onOpenAiAssistant={() => setIsAiModalOpen(true)}
       />
 
       {/* 2. MOBILE TOP BAR (RESPONSIVE MOBILE VIEW ONLY < 768px) */}
@@ -60,6 +63,13 @@ export default function StudentDashboardPage({ onLogout }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsAiModalOpen(true)}
+            className="flex items-center gap-1 bg-amber-400 text-amber-950 hover:bg-amber-500 font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border-b-2 border-amber-600 active:translate-y-0.5 transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 fill-amber-950 animate-pulse" />
+            <span>AI Hỏi đáp</span>
+          </button>
           <div className="flex items-center gap-1 font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-xs">
             🔥 3
           </div>
@@ -109,6 +119,23 @@ export default function StudentDashboardPage({ onLogout }) {
           )}
         </div>
       </div>
+
+      {/* FLOATING AI ASSISTANT BUTTON (DESKTOP) */}
+      <button
+        onClick={() => setIsAiModalOpen(true)}
+        className="hidden md:flex fixed bottom-6 right-6 z-40 items-center gap-2.5 bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 font-extrabold px-5 py-3 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-white ring-4 ring-amber-400/20 group cursor-pointer"
+      >
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
+          <Sparkles className="w-5 h-5 text-amber-600 fill-amber-400" />
+        </div>
+        <span className="text-sm uppercase tracking-wide">Hỏi Trợ Lý Raccoon AI</span>
+      </button>
+
+      {/* RACCOON AI MODAL */}
+      <RaccoonAiModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+      />
 
       {/* 4. MOBILE BOTTOM NAVIGATION BAR */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-50 flex justify-around items-center px-2 shadow-xl">
