@@ -705,6 +705,13 @@ export function saveClassesTable(classList) {
   return { success: true, count: classList.length };
 }
 
+export function deleteClassRecord(classId) {
+  const list = getClassesTable();
+  const filtered = list.filter(c => c.id !== classId);
+  saveClassesTable(filtered);
+  return { success: true };
+}
+
 // 2. Wardrobe Items Catalog Table API
 const WARDROBE_CATALOG_STORAGE_KEY = 'vdvh_wardrobe_catalog';
 
@@ -717,7 +724,65 @@ export function saveWardrobeCatalogTable(catalog) {
   return { success: true, count: catalog.length };
 }
 
-// 3. Cloud Firestore Master Seeder
+export function createWardrobeItemRecord(newItem) {
+  const catalog = getWardrobeCatalogTable();
+  const updated = [newItem, ...catalog];
+  saveWardrobeCatalogTable(updated);
+  return { success: true };
+}
+
+export function deleteWardrobeItemRecord(itemId) {
+  const catalog = getWardrobeCatalogTable();
+  const filtered = catalog.filter(i => i.id !== itemId);
+  saveWardrobeCatalogTable(filtered);
+  return { success: true };
+}
+
+// 3. Student Table Complete CRUD API
+export function createStudentRecord(newStudent) {
+  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const studentObj = {
+    id: newStudent.id || 'st_' + Date.now(),
+    name: newStudent.name,
+    username: newStudent.username.toLowerCase().trim(),
+    gender: newStudent.gender || 'male',
+    class: newStudent.class || 'Lớp 8A1',
+    body: newStudent.gender === 'female' ? 'body_female' : 'base',
+    current_star: parseInt(newStudent.current_star) || 0,
+    streak: 3,
+    must_change_password: false,
+    created_at: new Date().toISOString()
+  };
+
+  const updated = [studentObj, ...students];
+  setLocal(STORAGE_KEYS.STUDENTS, updated);
+  syncStudentToFirestore(studentObj);
+  return { success: true, student: studentObj };
+}
+
+export function updateStudentRecord(studentId, updatedFields) {
+  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const student = students.find(s => s.id === studentId);
+  if (!student) throw new Error("Học sinh không tồn tại");
+
+  Object.assign(student, updatedFields);
+  if (updatedFields.gender) {
+    student.body = updatedFields.gender === 'female' ? 'body_female' : 'base';
+  }
+
+  setLocal(STORAGE_KEYS.STUDENTS, students);
+  syncStudentToFirestore(student);
+  return { success: true, student };
+}
+
+export function deleteStudentRecord(studentId) {
+  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const filtered = students.filter(s => s.id !== studentId);
+  setLocal(STORAGE_KEYS.STUDENTS, filtered);
+  return { success: true };
+}
+
+// 4. Cloud Firestore Master Seeder
 export async function seedFirestoreTables() {
   let seededCount = 0;
   try {
@@ -754,6 +819,7 @@ export async function seedFirestoreTables() {
     };
   }
 }
+
 
 
 

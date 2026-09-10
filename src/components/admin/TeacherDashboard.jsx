@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Key, RefreshCw, CheckCircle2, AlertCircle, FileSpreadsheet, 
-  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy, Database, Plus, Edit3, Save
+  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy, Database, Plus, Edit3, Save, Trash2, UserPlus
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { 
   adminResetPassword, syncQuestions, importExcelArrayBuffer,
-  getClassesTable, saveClassesTable, getWardrobeCatalogTable, saveWardrobeCatalogTable, seedFirestoreTables
+  getClassesTable, saveClassesTable, deleteClassRecord,
+  getWardrobeCatalogTable, saveWardrobeCatalogTable, createWardrobeItemRecord, deleteWardrobeItemRecord,
+  createStudentRecord, updateStudentRecord, deleteStudentRecord,
+  seedFirestoreTables
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 import { INITIAL_LESSONS } from '../../services/mockData';
@@ -29,6 +32,17 @@ export default function TeacherDashboard() {
   // Editing Wardrobe Item State
   const [editingItem, setEditingItem] = useState(null);
 
+  // Student Modals State
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [studentForm, setStudentForm] = useState({
+    name: '',
+    username: '',
+    gender: 'male',
+    class: 'Lớp 8/8',
+    current_star: 0
+  });
+
   useEffect(() => {
     loadData();
   }, []);
@@ -38,6 +52,52 @@ export default function TeacherDashboard() {
     setStudents(list);
     setClassesList(getClassesTable());
     setWardrobeCatalog(getWardrobeCatalogTable());
+  };
+
+  const handleCreateStudent = (e) => {
+    e.preventDefault();
+    if (!studentForm.name.trim() || !studentForm.username.trim()) {
+      alert('Vui lòng nhập đầy đủ Họ tên và Username');
+      return;
+    }
+    try {
+      createStudentRecord(studentForm);
+      loadData();
+      setIsAddStudentOpen(false);
+      setStudentForm({ name: '', username: '', gender: 'male', class: 'Lớp 8/8', current_star: 0 });
+      alert(`Đã tạo học sinh "${studentForm.name}" thành công!`);
+    } catch (err) {
+      alert('Lỗi tạo học sinh: ' + err.message);
+    }
+  };
+
+  const handleUpdateStudentSubmit = (e) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    try {
+      updateStudentRecord(editingStudent.id, editingStudent);
+      loadData();
+      setEditingStudent(null);
+      alert(`Đã cập nhật thông tin học sinh "${editingStudent.name}"!`);
+    } catch (err) {
+      alert('Lỗi cập nhật: ' + err.message);
+    }
+  };
+
+  const handleDeleteStudent = (studentId, studentName) => {
+    if (confirm(`Bạn có chắc chắn muốn xóa học sinh "${studentName}" khỏi hệ thống?`)) {
+      deleteStudentRecord(studentId);
+      loadData();
+      alert(`Đã xóa học sinh "${studentName}".`);
+    }
+  };
+
+  const handleDeleteClass = (classId, className) => {
+    if (confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"?`)) {
+      deleteClassRecord(classId);
+      loadData();
+      alert(`Đã xóa lớp "${className}".`);
+    }
   };
 
   const handleAddClass = (e) => {
@@ -298,11 +358,20 @@ export default function TeacherDashboard() {
         </button>
       </div>
 
-      {/* TAB 1: DANH SÁCH HỌC SINH + SEARCH & CLASS FILTER */}
+      {/* TAB 1: DANH SÁCH HỌC SINH + SEARCH & CLASS FILTER & ADD STUDENT */}
       {activeTab === 'students' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-            <h3 className="text-sm font-extrabold text-slate-900">Danh sách học sinh thực nghiệm ({filteredStudents.length}/{students.length})</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-extrabold text-slate-900">Danh sách học sinh thực nghiệm ({filteredStudents.length}/{students.length})</h3>
+              <button
+                onClick={() => setIsAddStudentOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition-all cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Thêm Học Sinh</span>
+              </button>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-2">
               {/* SEARCH BAR */}
@@ -366,13 +435,26 @@ export default function TeacherDashboard() {
                       </td>
                       <td className="p-3 font-bold text-slate-600">{st.class || 'Không liên kết'}</td>
                       <td className="p-3 font-extrabold text-amber-600">⭐ {st.current_star || 0}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => setEditingStudent({ ...st })}
+                          className="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-2 py-1 rounded-lg border border-sky-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          Sửa
+                        </button>
                         <button
                           onClick={() => handleResetPass(st.id, st.name)}
-                          className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-lg border border-purple-200 text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-2.5 py-1 rounded-lg border border-purple-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Key className="w-3.5 h-3.5" />
-                          Reset mật khẩu
+                          <Key className="w-3 h-3" />
+                          Reset
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStudent(st.id, st.name)}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </td>
                     </tr>
@@ -665,6 +747,201 @@ export default function TeacherDashboard() {
               onSelectLesson={(lessonId) => console.log('Admin selected lesson:', lessonId)}
               isAdminMode={true}
             />
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: THÊM HỌC SINH MỚI */}
+      {isAddStudentOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl relative">
+            <button 
+              onClick={() => setIsAddStudentOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-purple-600" />
+              <h3 className="text-base font-black text-slate-900">Thêm Học Sinh Mới</h3>
+            </div>
+
+            <form onSubmit={handleCreateStudent} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Họ và Tên:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Trần Văn Nam"
+                  value={studentForm.name}
+                  onChange={e => setStudentForm({ ...studentForm, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Username (Tên đăng nhập không dấu):</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="tranvannam"
+                  value={studentForm.username}
+                  onChange={e => setStudentForm({ ...studentForm, username: e.target.value.toLowerCase().trim() })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Giới Tính:</label>
+                  <select
+                    value={studentForm.gender}
+                    onChange={e => setStudentForm({ ...studentForm, gender: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="male">Nam (Boy)</option>
+                    <option value="female">Nữ (Girl)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Lớp Học:</label>
+                  <select
+                    value={studentForm.class}
+                    onChange={e => setStudentForm({ ...studentForm, class: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    {classList.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                    <option value="Lớp 8/8">Lớp 8/8</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Số Sao Khởi Tạo (⭐):</label>
+                <input
+                  type="number"
+                  value={studentForm.current_star}
+                  onChange={e => setStudentForm({ ...studentForm, current_star: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStudentOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs px-5 py-2 rounded-xl shadow-md cursor-pointer"
+                >
+                  Tạo Học Sinh
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: SỬA HỌC SINH */}
+      {editingStudent && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl relative">
+            <button 
+              onClick={() => setEditingStudent(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-sky-600" />
+              <h3 className="text-base font-black text-slate-900">Sửa Thông Tin Học Sinh</h3>
+            </div>
+
+            <form onSubmit={handleUpdateStudentSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Họ và Tên:</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStudent.name}
+                  onChange={e => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Username:</label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingStudent.username}
+                  className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-500 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Giới Tính:</label>
+                  <select
+                    value={editingStudent.gender}
+                    onChange={e => setEditingStudent({ ...editingStudent, gender: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="male">Nam (Boy)</option>
+                    <option value="female">Nữ (Girl)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Lớp Học:</label>
+                  <select
+                    value={editingStudent.class || 'Lớp 8/8'}
+                    onChange={e => setEditingStudent({ ...editingStudent, class: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    {classList.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                    <option value="Lớp 8/8">Lớp 8/8</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Điểm Sao Tích Lũy (⭐):</label>
+                <input
+                  type="number"
+                  value={editingStudent.current_star || 0}
+                  onChange={e => setEditingStudent({ ...editingStudent, current_star: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-amber-600"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs px-5 py-2 rounded-xl shadow-md cursor-pointer"
+                >
+                  Cập Nhật
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
