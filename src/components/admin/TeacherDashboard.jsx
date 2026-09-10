@@ -553,13 +553,20 @@ export default function TeacherDashboard() {
               <tbody className="divide-y divide-slate-100">
                 {wardrobeCatalog.map((item) => {
                   const isEditing = editingItem && editingItem.id === item.id;
-                  const thumbPath = `/assets/avatar/thumb/${item.slot}/${item.fileName}`;
+                  const slotFolder = item.slot === 'bottom_or_skirt' ? 'bottom' : item.slot;
+                  const thumbPath = `/assets/avatar/thumb/${slotFolder}/${item.fileName || `${item.id}.png`}`;
+                  const fullImgPath = `/assets/avatar/${slotFolder}/${item.fileName || `${item.id}.png`}`;
                   return (
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-3 font-mono text-slate-500">{item.id}</td>
                       <td className="p-3">
-                        <div className="w-10 h-10 rounded-lg bg-white border border-purple-200 p-1 flex items-center justify-center shadow-inner">
-                          <img src={thumbPath} alt={item.name} className="max-w-full max-h-full object-contain" />
+                        <div className="w-10 h-10 rounded-lg bg-white border border-purple-200 p-1 flex items-center justify-center shadow-inner overflow-hidden">
+                          <img 
+                            src={thumbPath} 
+                            alt={item.name} 
+                            onError={(e) => { e.target.src = fullImgPath; }}
+                            className="max-w-full max-h-full object-contain" 
+                          />
                         </div>
                       </td>
                       <td className="p-3 font-extrabold text-slate-900">
