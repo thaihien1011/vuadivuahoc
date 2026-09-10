@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Key, RefreshCw, CheckCircle2, AlertCircle, FileSpreadsheet, 
-  Search, ShieldCheck, Lock, X, MapPin, Target
+  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { adminResetPassword, syncQuestions, importExcelArrayBuffer } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 import { INITIAL_LESSONS } from '../../services/mockData';
@@ -10,6 +11,8 @@ import { INITIAL_LESSONS } from '../../services/mockData';
 export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState('students'); // 'students' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
+  const [selectedClass, setSelectedClass] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [resetModalData, setResetModalData] = useState(null);
   const [sheetId, setSheetId] = useState('1ntVNq7XVoVsSlQ0Mp_itoTTCt_VQxGQY');
   const [syncStatus, setSyncStatus] = useState(null);
@@ -69,22 +72,122 @@ export default function TeacherDashboard() {
     }
   };
 
+  // EXPORT NCKH EXCEL REPORT FOR TEACHERS
+  const exportNckhExcelReport = () => {
+    if (!students || students.length === 0) {
+      alert('Chưa có dữ liệu học sinh để xuất báo cáo.');
+      return;
+    }
+
+    const reportData = students.map((st, index) => ({
+      'STT': index + 1,
+      'Mã Học Sinh (ID)': st.id,
+      'Họ và Tên': st.name,
+      'Tên Đăng Nhập (Username)': st.username,
+      'Giới Tính': st.gender === 'male' ? 'Nam (Boy)' : st.gender === 'female' ? 'Nữ (Girl)' : 'Chưa chọn',
+      'Lớp': st.class || 'Không liên kết',
+      'Số Sao Tích Lũy (⭐)': st.current_star || 0,
+      'Chuỗi Ngày Học (🔥)': st.streak || 3,
+      'Trạng Thái Mật Khẩu': st.must_change_password ? 'Cần đổi mật khẩu' : 'Bình thường'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(reportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Báo Cáo NCKH THCS Trần Phú');
+
+    // Auto-fit column widths
+    worksheet['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 15 }, // ID
+      { wch: 25 }, // Họ tên
+      { wch: 18 }, // Username
+      { wch: 14 }, // Giới tính
+      { wch: 16 }, // Lớp
+      { wch: 18 }, // Sao
+      { wch: 18 }, // Streak
+      { wch: 20 }  // Pass status
+    ];
+
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Bao_Cao_NCKH_Thuc_Nghiem_THCS_Tran_Phu_${today}.xlsx`);
+  };
+
+  // Unique classes list for filter
+  const classList = Array.from(new Set(students.map(s => s.class || 'Không liên kết')));
+
+  // Filtered students
+  const filteredStudents = students.filter(st => {
+    const matchClass = selectedClass === 'ALL' || (st.class || 'Không liên kết') === selectedClass;
+    const matchSearch = !searchQuery.trim() || 
+      st.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      st.username.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchClass && matchSearch;
+  });
+
+  // Calculate summary metrics
+  const totalStars = students.reduce((acc, st) => acc + (st.current_star || 0), 0);
+  const avgStars = students.length ? Math.round(totalStars / students.length) : 0;
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* BRAND HEADER */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
+          <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md">
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Cổng quản trị giáo viên</h1>
-            <p className="text-xs font-bold text-purple-600 uppercase">admin.vuadivuahoc</p>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Cổng Quản Trị Giáo Viên</h1>
+            <p className="text-xs font-bold text-purple-600 uppercase tracking-wide">Domain: admin.vuadivuahoc • THCS Trần Phú 2026</p>
           </div>
+        </div>
+
+        {/* 1-CLICK NCKH EXCEL EXPORT BUTTON */}
+        <button
+          onClick={exportNckhExcelReport}
+          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer"
+        >
+          <Download className="w-4 h-4" />
+          <span>Xuất Báo Cáo Excel NCKH</span>
+        </button>
+      </div>
+
+      {/* SUMMARY METRICS METERS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-bold mb-1">
+            <Users className="w-4 h-4 text-purple-600" />
+            <span>Tổng Học Sinh</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900">{students.length} <span className="text-xs font-normal text-slate-400">em</span></div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-bold mb-1">
+            <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+            <span>Tổng Sao Tích Lũy</span>
+          </div>
+          <div className="text-2xl font-black text-amber-600">{totalStars} ⭐</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-bold mb-1">
+            <Trophy className="w-4 h-4 text-sky-600" />
+            <span>Trung Bình Sao/Em</span>
+          </div>
+          <div className="text-2xl font-black text-sky-600">{avgStars} ⭐</div>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500 text-xs font-bold mb-1">
+            <Filter className="w-4 h-4 text-emerald-600" />
+            <span>Tổng Số Lớp</span>
+          </div>
+          <div className="text-2xl font-black text-emerald-600">{classList.length} <span className="text-xs font-normal text-slate-400">lớp</span></div>
         </div>
       </div>
 
-      {/* MINIMALIST TEXT SUB-TABS (WITH UNDERLINE HIGHLIGHT) */}
+      {/* MINIMALIST TEXT SUB-TABS */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-8 shadow-sm rounded-xl overflow-x-auto">
         <button
           onClick={() => setActiveTab('students')}
@@ -94,7 +197,7 @@ export default function TeacherDashboard() {
               : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
           }`}
         >
-          Lớp học ({students.length})
+          Quản Lý Lớp Học ({students.length})
         </button>
 
         <button
@@ -105,7 +208,7 @@ export default function TeacherDashboard() {
               : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
           }`}
         >
-          Đồng bộ Google Sheet
+          Đồng Bộ Ngân Hàng Câu Hỏi
         </button>
 
         <button
@@ -117,15 +220,41 @@ export default function TeacherDashboard() {
           }`}
         >
           <Target className="w-3.5 h-3.5" />
-          Hiệu chỉnh tọa độ bản đồ
+          Hiệu Chỉnh Tọa Độ Bản Đồ
         </button>
       </div>
 
-      {/* TAB 1: DANH SÁCH HỌC SINH */}
+      {/* TAB 1: DANH SÁCH HỌC SINH + SEARCH & CLASS FILTER */}
       {activeTab === 'students' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-            <h3 className="text-sm font-extrabold text-slate-900">Danh sách học sinh</h3>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <h3 className="text-sm font-extrabold text-slate-900">Danh sách học sinh thực nghiệm ({filteredStudents.length}/{students.length})</h3>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              {/* SEARCH BAR */}
+              <div className="relative w-full sm:w-48">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm học sinh..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* CLASS FILTER */}
+              <select
+                value={selectedClass}
+                onChange={e => setSelectedClass(e.target.value)}
+                className="w-full sm:w-auto bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-purple-500"
+              >
+                <option value="ALL">Tất cả các lớp</option>
+                {classList.map(cls => (
+                  <option key={cls} value={cls}>Lớp {cls}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -134,29 +263,47 @@ export default function TeacherDashboard() {
                 <tr>
                   <th className="p-3">Học sinh</th>
                   <th className="p-3">Username</th>
+                  <th className="p-3">Giới tính</th>
                   <th className="p-3">Lớp</th>
-                  <th className="p-3">Stars</th>
+                  <th className="p-3">Điểm Sao</th>
                   <th className="p-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {students.map((st) => (
-                  <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 font-extrabold text-slate-900">{st.name}</td>
-                    <td className="p-3 font-mono text-slate-600">{st.username}</td>
-                    <td className="p-3 font-bold text-slate-600">{st.class || 'Lớp 8A1'}</td>
-                    <td className="p-3 font-extrabold text-amber-600">⭐ {st.current_star || 0}</td>
-                    <td className="p-3 text-right">
-                      <button
-                        onClick={() => handleResetPass(st.id, st.name)}
-                        className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-lg border border-purple-200 text-xs inline-flex items-center gap-1.5 transition-colors"
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                        Reset mật khẩu
-                      </button>
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="p-6 text-center text-slate-400 font-bold">
+                      Không tìm thấy học sinh phù hợp.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredStudents.map((st) => (
+                    <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 font-extrabold text-slate-900">{st.name}</td>
+                      <td className="p-3 font-mono text-slate-600">{st.username}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                          st.gender === 'male' ? 'bg-sky-50 text-sky-700 border border-sky-200' :
+                          st.gender === 'female' ? 'bg-pink-50 text-pink-700 border border-pink-200' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {st.gender === 'male' ? '👦 Nam' : st.gender === 'female' ? '👧 Nữ' : 'Chưa rõ'}
+                        </span>
+                      </td>
+                      <td className="p-3 font-bold text-slate-600">{st.class || 'Không liên kết'}</td>
+                      <td className="p-3 font-extrabold text-amber-600">⭐ {st.current_star || 0}</td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => handleResetPass(st.id, st.name)}
+                          className="bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold px-3 py-1.5 rounded-lg border border-purple-200 text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          Reset mật khẩu
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

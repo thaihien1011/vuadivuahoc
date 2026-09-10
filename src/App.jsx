@@ -6,7 +6,7 @@ import StudentDashboardPage from './pages/StudentDashboardPage';
 import TeacherDashboard from './components/admin/TeacherDashboard';
 import MustChangePasswordPage from './pages/MustChangePasswordPage';
 import { getCurrentAuthUser, setCurrentAuthUser } from './services/api';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck, UserCheck, ExternalLink } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -15,10 +15,17 @@ export default function App() {
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
-    // Separate portals based on domain / path / hash
-    if (window.location.hash === '#admin' || window.location.pathname.startsWith('/admin') || window.location.hostname.startsWith('admin')) {
+    // 1. Detect subdomain or path or hash for Admin vs Student Portal
+    const host = window.location.hostname;
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+
+    if (host.startsWith('admin.') || path.startsWith('/admin') || hash === '#admin') {
       setAppPortal('admin');
+    } else {
+      setAppPortal('student');
     }
+
     checkAuth();
   }, []);
 
@@ -46,9 +53,41 @@ export default function App() {
     setCurrentUser(null);
   };
 
+  const switchPortal = (portal) => {
+    setAppPortal(portal);
+    if (portal === 'admin') {
+      window.location.hash = '#admin';
+    } else {
+      window.location.hash = '';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f7f7f7]">
-      {/* PORTAL 1: STUDENT WEB APP (vuadivuahoc) - 100% CLEAN NO TOP DEMO BAR */}
+      {/* FLOATING QUICK PORTAL SWITCHER (FOR EASY DEMO & MULTI-DOMAIN SIMULATION) */}
+      <div className="fixed bottom-3 left-3 z-50 flex items-center gap-1.5 bg-slate-900/90 text-white p-1.5 rounded-full shadow-2xl backdrop-blur-md text-[10px] font-extrabold border border-slate-700">
+        <button
+          onClick={() => switchPortal('student')}
+          className={`px-3 py-1 rounded-full transition-all flex items-center gap-1 ${
+            appPortal === 'student' ? 'bg-[#58cc02] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <UserCheck className="w-3 h-3" />
+          <span>Domain Học Sinh</span>
+        </button>
+
+        <button
+          onClick={() => switchPortal('admin')}
+          className={`px-3 py-1 rounded-full transition-all flex items-center gap-1 ${
+            appPortal === 'admin' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-3 h-3" />
+          <span>Domain Admin / Giáo viên</span>
+        </button>
+      </div>
+
+      {/* PORTAL 1: STUDENT WEB APP (vuadivuahoc) */}
       {appPortal === 'student' && (
         <>
           {!currentUser || currentUser.role !== 'student' ? (
@@ -83,13 +122,22 @@ export default function App() {
               <TeacherLoginPage onLoginSuccess={handleLoginSuccess} />
             </div>
           ) : (
-            <div className="app-container p-6">
-              <div className="flex justify-between items-center mb-6">
-                <span className="badge bg-purple-100 text-purple-800 border border-purple-300 text-xs font-bold">
-                  admin.vuadivuahoc — Phiên làm việc Giáo viên: {currentUser.name}
-                </span>
-                <button onClick={handleLogout} className="btn-duo-outline text-xs py-2 px-3">
-                  <LogOut className="w-4 h-4" /> Đăng Xuất Giáo Viên
+            <div className="app-container p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-6 max-w-5xl mx-auto">
+                <div className="flex items-center gap-2">
+                  <span className="bg-purple-100 text-purple-900 border border-purple-300 px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 shadow-sm">
+                    <ShieldCheck className="w-4 h-4 text-purple-700" />
+                    CỔNG QUẢN TRỊ ADMIN (admin.vuadivuahoc)
+                  </span>
+                  <span className="text-xs font-extrabold text-slate-500 hidden sm:inline">
+                    | Phiên đăng nhập: {currentUser.name}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold border border-rose-200 text-xs py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Đăng Xuất
                 </button>
               </div>
               <TeacherDashboard />
