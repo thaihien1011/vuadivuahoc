@@ -80,8 +80,8 @@ export default function StudentDashboardPage({ onLogout }) {
       </div>
 
       {/* 3. MAIN CENTER CONTENT AREA (ZERO PADDING & FULL VIEWPORT HEIGHT ALIGNMENT FOR MAP) */}
-      <div className="flex-1 md:ml-56 w-full min-h-screen">
-        <div className={`w-full ${activeTab === 'map' ? 'p-1 sm:p-2 h-screen flex flex-col' : 'p-3 sm:p-6 max-w-5xl mx-auto'}`}>
+      <div className="flex-1 md:ml-56 w-full min-h-screen pb-16 md:pb-0">
+        <div className={`w-full ${activeTab === 'map' ? 'p-1 sm:p-2 h-[calc(100dvh-115px)] md:h-screen flex flex-col' : 'p-3 sm:p-6 max-w-5xl mx-auto'}`}>
           {selectedLessonId ? (
             <QuizPlay
               lessonId={selectedLessonId}

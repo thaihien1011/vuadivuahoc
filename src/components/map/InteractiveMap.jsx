@@ -474,13 +474,13 @@ export default function InteractiveMap({ lessons = [], lockedScores = [], onSele
 
       {/* 3. MAP CANVAS CONTAINER (KHUNG BẢN ĐỒ HOÀN TOÀN TÁCH BIỆT BÊN DƯỚI) */}
       {activeSubTab === 'map' && (
-        <div className="relative flex-1 w-full h-[calc(100vh-140px)] min-h-[500px] bg-[#eaf4ff] rounded-xl border border-slate-300 shadow-sm overflow-hidden flex items-center justify-center">
+        <div className="relative flex-1 w-full h-[calc(100dvh-175px)] md:h-[calc(100vh-140px)] min-h-[380px] bg-[#eaf4ff] rounded-xl border border-slate-300 shadow-sm overflow-hidden flex items-center justify-center p-1">
           
           {/* MAP CANVAS WRAPPER (ASPECT RATIO 1000/1414 MATCHING BAN-DO-VIET-NAM-05-01.jpg) */}
           <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
             <div 
               onClick={handleMapClick}
-              className={`relative h-full aspect-[1000/1414] transition-all duration-700 cubic-bezier(0.25, 1, 0.5, 1) transform-gpu ${
+              className={`relative max-w-full max-h-full aspect-[1000/1414] w-auto h-auto transition-all duration-700 cubic-bezier(0.25, 1, 0.5, 1) transform-gpu ${
                 isPickerMode ? 'cursor-crosshair ring-4 ring-purple-500 rounded-lg' : ''
               }`}
               style={getZoomStyle()}
@@ -488,7 +488,7 @@ export default function InteractiveMap({ lessons = [], lockedScores = [], onSele
               <img 
                 src="/BAN-DO-VIET-NAM-05-01.jpg" 
                 alt="Bản đồ Việt Nam Vector"
-                className="w-full h-full object-cover pointer-events-none select-none"
+                className="w-full h-full object-contain pointer-events-none select-none"
                 onError={(e) => {
                   e.target.src = "/vietnam-map.jpg";
                 }}
