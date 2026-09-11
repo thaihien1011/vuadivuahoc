@@ -301,6 +301,26 @@ const TOPIC_KNOWLEDGE_MAP = [
     keywords: ["hang dong", "phong nha", "son doong"],
     title: "Vương quốc hang động",
     answer: "Chào Nhà thám hiểm! **Quảng Bình** (vùng Bắc Trung Bộ) được mệnh danh là 'Vương quốc hang động' với Hang Sơn Đoòng (hang động tự nhiên lớn nhất thế giới 🦇) và Vườn quốc gia Phong Nha - Kẻ Bàng!"
+  },
+  {
+    keywords: ["thanh long", "thu phu thanh long"],
+    title: "Thanh Long",
+    answer: "Chào Nhà thám hiểm! **Bình Thuận** (vùng Nam Trung Bộ) được mệnh danh là 'Thủ phủ Thanh Long' của Việt Nam 🌵🔴 với những cánh đồng thanh long bạt ngàn nổi tiếng khắp cả nước và xuất khẩu thế giới!"
+  },
+  {
+    keywords: ["vai thieu", "vai thanh ha"],
+    title: "Vải thiều",
+    answer: "Chào Nhà thám hiểm! Vải thiều nổi tiếng nhất thuộc về tỉnh **Bắc Giang** (Lục Ngạn 🔴) và **Hải Dương** (Thanh Hà) với hương vị ngọt thanh trứ danh!"
+  },
+  {
+    keywords: ["nhan long", "nhan hung yen"],
+    title: "Nhãn lồng",
+    answer: "Chào Nhà thám hiểm! Nhãn lồng là quả ngọt đặc sản nức tiếng của đất **Hưng Yên** (vùng Đồng bằng Sông Hồng) 🟡!"
+  },
+  {
+    keywords: ["sau rieng"],
+    title: "Sầu riêng",
+    answer: "Chào Nhà thám hiểm! Sầu riêng là loại trái cây đặc sản nổi tiếng được trồng nhiều ở các tỉnh **Tiền Giang** (Cái Bè), **Bến Tre** và vùng **Tây Nguyên** (Đắk Lắk) 🍈!"
   }
 ];
 
@@ -309,32 +329,38 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
 
   const normalizedQ = normalizeVietnameseText(userQuestion);
 
-  // 1. Try Gemini REST API if apiKey configured
+  // 1. Try Gemini REST API (gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash) if apiKey configured
   const effectiveKey = apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
   if (effectiveKey) {
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${effectiveKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: `${SYSTEM_PROMPT}\n\nHọc sinh hỏi: "${userQuestion}"\n\nHãy trả lời Raccoon:` }
-              ]
-            }
-          ]
-        })
-      });
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: `${SYSTEM_PROMPT}\n\nHọc sinh hỏi: "${userQuestion}"\n\nHãy trả lời Raccoon:` }
+                ]
+              }
+            ]
+          })
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return text.trim();
+        if (response.ok) {
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text.trim();
+        } else {
+          const errBody = await response.json().catch(() => ({}));
+          console.warn(`Gemini API ${modelName} returned status ${response.status}:`, errBody);
+        }
+      } catch (err) {
+        console.warn(`Gemini API ${modelName} call warning:`, err);
       }
-    } catch (err) {
-      console.warn("Gemini API call warning, using intelligent local engine:", err);
     }
   }
 
