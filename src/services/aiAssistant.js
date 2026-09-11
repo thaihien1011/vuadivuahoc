@@ -260,6 +260,50 @@ const PROVINCE_REGION_MAP = [
   }
 ];
 
+// TOPIC & RESOURCE KNOWLEDGE MAP (Khoáng sản, Nông sản, Địa lý, Lịch sử Việt Nam)
+const TOPIC_KNOWLEDGE_MAP = [
+  {
+    keywords: ["than da", "khoang san than", "mo than", "vung than"],
+    title: "Than đá (Khoáng sản)",
+    answer: "Chào Nhà thám hiểm! Than đá là tài nguyên khoáng sản nổi tiếng nhất của tỉnh **Quảng Ninh** (vùng Đông Bắc Bộ) ⛏️🪨. Quảng Ninh sở hữu trữ lượng than đá lớn nhất Việt Nam (chiếm trên 90% trữ lượng cả nước) với các mỏ than nổi tiếng như Cẩm Phả, Hòn Gai, Uông Bí!"
+  },
+  {
+    keywords: ["dau khi", "dau mo", "khi dot", "gian khoan"],
+    title: "Dầu khí & Dầu mỏ",
+    answer: "Chào Nhà thám hiểm! Dầu mỏ và khí đốt là tài nguyên khoáng sản năng lượng quan trọng tập trung ở thềm lục địa phía Nam, gắn liền với tỉnh **Bà Rịa - Vũng Tàu** ⛽🛢️ với các mỏ dầu Bạch Hổ, Rồng, Đại Hùng!"
+  },
+  {
+    keywords: ["bo xit", "bauxite", "quang nhom"],
+    title: "Quặng Bô-xít (Bauxite)",
+    answer: "Chào Nhà thám hiểm! Quặng Bô-xít (dùng để sản xuất nhôm) tập trung nhiều nhất ở vùng **Tây Nguyên**, đặc biệt là tỉnh **Đắk Nông** và **Lâm Đồng** ⛰️⛏️ với trữ lượng thuộc hàng lớn nhất thế giới!"
+  },
+  {
+    keywords: ["ca phe", "thu phu ca phe"],
+    title: "Cà phê",
+    answer: "Chào Nhà thám hiểm! Cà phê là nông sản chủ lực của vùng **Tây Nguyên**, trong đó tỉnh **Đắk Lắk** (Buôn Ma Thuột) được mệnh danh là 'Thủ phủ Cà phê của Việt Nam' ☕ rực rỡ!"
+  },
+  {
+    keywords: ["vua lua", "lua nuoc", "lua gao"],
+    title: "Vựa lúa Việt Nam",
+    answer: "Chào Nhà thám hiểm! Việt Nam có 2 vựa lúa lớn nhất là **Đồng bằng sông Cửu Long** (vựa lúa lớn nhất cả nước 🌾) và **Đồng bằng sông Hồng**!"
+  },
+  {
+    keywords: ["thuy dien", "nha may thuy dien"],
+    title: "Thủy điện",
+    answer: "Chào Nhà thám hiểm! Các nhà máy thủy điện lớn nhất Việt Nam nằm ở miền Bắc trên Sông Đà, bao gồm **Thủy điện Sơn La** (lớn nhất Đông Nam Á ⚡) và **Thủy điện Hòa Bình**!"
+  },
+  {
+    keywords: ["che", "tra", "de nhat danh tra"],
+    title: "Chè (Trà)",
+    answer: "Chào Nhà thám hiểm! Tỉnh **Thái Nguyên** nổi tiếng với thương hiệu 'Đệ nhất danh trà' Chè Tân Cương 🍵, và vùng đất **Lâm Đồng** (Bảo Lộc) cũng là thủ phủ trà miền Nam!"
+  },
+  {
+    keywords: ["hang dong", "phong nha", "son doong"],
+    title: "Vương quốc hang động",
+    answer: "Chào Nhà thám hiểm! **Quảng Bình** (vùng Bắc Trung Bộ) được mệnh danh là 'Vương quốc hang động' với Hang Sơn Đoòng (hang động tự nhiên lớn nhất thế giới 🦇) và Vườn quốc gia Phong Nha - Kẻ Bàng!"
+  }
+];
+
 export async function askRaccoonAI(userQuestion, apiKey = '') {
   if (!userQuestion || !userQuestion.trim()) return '';
 
@@ -294,12 +338,19 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
     }
   }
 
-  // 2. CHECK REGION / GEOGRAPHY SPECIFIC INTENT MATCH (E.g. "đắc lắc thuộc miền nào ?")
+  // 2. CHECK TOPIC & RESOURCE KNOWLEDGE (E.g., "than đá", "dầu khí", "bô xít", "cà phê")
+  for (let topic of TOPIC_KNOWLEDGE_MAP) {
+    if (topic.keywords.some(kw => normalizedQ.includes(kw))) {
+      return topic.answer;
+    }
+  }
+
+  // 3. CHECK REGION / GEOGRAPHY SPECIFIC INTENT MATCH (E.g. "đắc lắc thuộc miền nào ?")
   const isRegionQuery = normalizedQ.includes("mien nao") || 
                         normalizedQ.includes("vung nao") || 
                         normalizedQ.includes("o dau") || 
                         normalizedQ.includes("thuoc mien") ||
-                        normalizedQ.includes("nam o đâu");
+                        normalizedQ.includes("nam o dau");
 
   for (let item of PROVINCE_REGION_MAP) {
     const isMatched = item.names.some(name => normalizedQ.includes(name));
@@ -311,7 +362,7 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
     }
   }
 
-  // 3. Search dynamic lessons database (INITIAL_LESSONS)
+  // 4. Search dynamic lessons database (INITIAL_LESSONS)
   const matchedLesson = INITIAL_LESSONS.find(l => {
     const normLoc = normalizeVietnameseText(l.location_name);
     const normProv = normalizeVietnameseText(l.province_name);
@@ -325,11 +376,11 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
     return `Chào Nhà thám hiểm! Raccoon biết về địa danh ${matchedLesson.location_name} nè: ${matchedLesson.intro_text || matchedLesson.subtitle} 📍. Nơi này nằm thuộc vùng ${matchedLesson.region}! Bạn hãy mở cột mốc ${matchedLesson.location_name} trên bản đồ để thi đấu nhé ⭐!`;
   }
 
-  // 4. Products / Specialties Query Intent
-  if (normalizedQ.includes("san vat") || normalizedQ.includes("dac san") || normalizedQ.includes("co gi ngon")) {
-    return `Chào Nhà thám hiểm! Việt Nam ta có 63 tỉnh thành với hàng ngàn sản vật phong phú: Cà phê & Ca cao Tây Nguyên (Đắk Lắk), Chè Tân Cương (Thái Nguyên), Chả mực (Quảng Ninh), Dừa (Bến Tre), Cua (Cà Mau)... Hãy nhập tên tỉnh thành cụ thể để Raccoon giải đáp chi tiết cho bạn nhé 🌾☕!`;
+  // 5. Products / Specialties Query Intent
+  if (normalizedQ.includes("san vat") || normalizedQ.includes("dac san") || normalizedQ.includes("co gi ngon") || normalizedQ.includes("khoang san")) {
+    return `Chào Nhà thám hiểm! Việt Nam ta có 63 tỉnh thành với tài nguyên & sản vật phong phú: Than đá (Quảng Ninh), Dầu khí (Bà Rịa - Vũng Tàu), Cà phê (Đắk Lắk), Chè (Thái Nguyên), Dừa (Bến Tre), Cua (Cà Mau)... Hãy hỏi Raccoon về tài nguyên/địa danh cụ thể để Raccoon giải đáp chi tiết cho bạn nhé ⛏️☕!`;
   }
 
-  // 5. Intelligent contextual default response
+  // 6. Intelligent contextual default response
   return `Chào Nhà thám hiểm! Raccoon đã ghi nhận câu hỏi: "${userQuestion}". Việt Nam ta gồm 63 tỉnh thành giàu đẹp với 3 miền Bắc - Trung - Nam và vùng Tây Nguyên hùng vĩ 📜🗺️. Bạn hãy thử hỏi Raccoon về các địa danh như Đắk Lắk, Điện Biên, Hà Nội, Đà Nẵng, Bến Tre, Cà Mau... nhé!`;
 }
