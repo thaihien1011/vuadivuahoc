@@ -358,6 +358,7 @@ export async function submitQuiz(attempt_id, answers, duration_seconds = 0) {
     status: 'submitted',
     score,
     total_questions: attempt.question_ids.length,
+    duration_seconds: attempt.duration_seconds || 0,
     per_question_result,
     submitted_at: attempt.submitted_at
   };

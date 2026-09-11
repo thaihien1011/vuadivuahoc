@@ -144,8 +144,9 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
   };
 
   const formatTimer = (totalSeconds) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
+    const validSecs = Number.isFinite(Number(totalSeconds)) ? Math.max(0, Math.floor(Number(totalSeconds))) : 0;
+    const mins = Math.floor(validSecs / 60);
+    const secs = validSecs % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
