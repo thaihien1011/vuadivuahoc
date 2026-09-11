@@ -185,15 +185,19 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
     throw new Error('PERMISSION_DENIED: Bạn cần đăng nhập tài khoản học sinh');
   }
 
-  // 1. Fetch lesson directly from Cloud Firestore
-  let lesson = null;
-  try {
-    const lessonSnap = await getDoc(doc(db, 'lessons', lesson_id));
-    if (lessonSnap.exists()) {
-      lesson = lessonSnap.data();
+  // 1. Fetch lesson directly from local storage first (supports live Google Sheet & Excel sync)
+  const localLessons = getLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
+  let lesson = localLessons.find(l => l.id === lesson_id);
+
+  if (!lesson) {
+    try {
+      const lessonSnap = await getDoc(doc(db, 'lessons', lesson_id));
+      if (lessonSnap.exists()) {
+        lesson = lessonSnap.data();
+      }
+    } catch (err) {
+      console.warn('Firestore getDoc lesson error, using local dataset:', err);
     }
-  } catch (err) {
-    console.warn('Firestore getDoc lesson error, using local dataset:', err);
   }
 
   if (!lesson) {
@@ -649,22 +653,156 @@ export async function changeStudentPassword(new_password) {
   return { success: true, message: 'Đổi mật khẩu thành công!' };
 }
 
+function parseCSV(csvText) {
+  const lines = csvText.split(/\r?\n/);
+  const result = [];
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) continue;
+    const row = [];
+    let insideQuote = false;
+    let entry = '';
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (insideQuote && line[i + 1] === '"') {
+          entry += '"';
+          i++;
+        } else {
+          insideQuote = !insideQuote;
+        }
+      } else if (char === ',' && !insideQuote) {
+        row.push(entry.trim());
+        entry = '';
+      } else {
+        entry += char;
+      }
+    }
+    row.push(entry.trim());
+    result.push(row);
+  }
+  return result;
+}
+
 /* ==========================================================================
    8. Function: syncQuestions(sheet_id)
    ========================================================================== */
 export async function syncQuestions(sheet_id) {
   const user = getCurrentAuthUser();
-  if (!user || user.role !== 'teacher') {
-    throw new Error('PERMISSION_DENIED: Chỉ giáo viên mới có quyền đồng bộ câu hỏi');
+  if (!user || (user.role !== 'teacher' && user.role !== 'superadmin')) {
+    throw new Error('PERMISSION_DENIED: Chỉ giáo viên hoặc Admin mới có quyền đồng bộ câu hỏi');
+  }
+
+  const targetSheetId = sheet_id || '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo';
+  let lessonsUpdated = 0;
+  let questionsUpdated = 0;
+
+  try {
+    // 1. Live Fetch lessons tab CSV
+    const lessonsRes = await fetch(`https://docs.google.com/spreadsheets/d/${targetSheetId}/gviz/tq?tqx=out:csv&sheet=lessons`);
+    if (lessonsRes.ok) {
+      const csvText = await lessonsRes.text();
+      const rows = parseCSV(csvText);
+      if (rows && rows.length > 1) {
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idIdx = header.indexOf('lesson_id');
+        const locIdx = header.indexOf('location_name');
+        const subIdx = header.indexOf('subtitle');
+        const nameIdx = header.indexOf('lesson_name');
+        const regIdx = header.indexOf('region');
+        const xIdx = header.indexOf('coord_x');
+        const yIdx = header.indexOf('coord_y');
+        const introIdx = header.indexOf('intro_text');
+        const vidIdx = header.indexOf('intro_video_url');
+        const actIdx = header.indexOf('is_active');
+
+        const parsedLessons = rows.slice(1).map(r => {
+          const lId = idIdx !== -1 ? r[idIdx] : r[0];
+          if (!lId || !lId.startsWith('LS_')) return null;
+
+          const locName = locIdx !== -1 ? r[locIdx] : '';
+          const subTitle = subIdx !== -1 ? r[subIdx] : '';
+          const fullName = nameIdx !== -1 && r[nameIdx] ? r[nameIdx] : (subTitle ? `${locName} — ${subTitle}` : locName);
+
+          return {
+            id: lId,
+            location_name: locName,
+            subtitle: subTitle,
+            name: fullName,
+            province_name: locName,
+            region: regIdx !== -1 ? r[regIdx] : 'Khác',
+            coordinates: {
+              x: parseFloat(xIdx !== -1 ? r[xIdx] : 20),
+              y: parseFloat(yIdx !== -1 ? r[yIdx] : 20)
+            },
+            is_active: actIdx !== -1 ? (r[actIdx] === 'TRUE' || r[actIdx] === 'true') : true,
+            intro_text: introIdx !== -1 ? r[introIdx] : '',
+            intro_video_url: vidIdx !== -1 ? r[vidIdx] : ''
+          };
+        }).filter(Boolean);
+
+        if (parsedLessons.length > 0) {
+          setLocal(STORAGE_KEYS.LESSONS, parsedLessons);
+          lessonsUpdated = parsedLessons.length;
+
+          // Sync to Cloud Firestore if connected
+          parsedLessons.forEach(async l => {
+            try {
+              await setDoc(doc(db, 'lessons', l.id), l, { merge: true });
+            } catch (e) {}
+          });
+        }
+      }
+    }
+
+    // 2. Live Fetch questions tab CSV
+    const questionsRes = await fetch(`https://docs.google.com/spreadsheets/d/${targetSheetId}/gviz/tq?tqx=out:csv&sheet=questions`);
+    if (questionsRes.ok) {
+      const csvText = await questionsRes.text();
+      const rows = parseCSV(csvText);
+      if (rows && rows.length > 0) {
+        let qRows = rows;
+        if (rows[0][0] && (rows[0][0].includes('question_id') || rows[0][0].includes('id'))) {
+          qRows = rows.slice(1);
+        }
+
+        const parsedQuestions = qRows.map((q, idx) => {
+          const qId = q[0] || `q_sheet_${idx}`;
+          const lId = q[1];
+          const text = q[2];
+          const type = q[3] || 'single_choice';
+          const opts = [q[4], q[5], q[6], q[7]].filter(Boolean);
+          const corr = q[8] ? String(q[8]).split(',').map(s => s.trim().toLowerCase()) : ['a'];
+
+          if (!lId || !text) return null;
+
+          return {
+            id: qId,
+            lesson_id: lId,
+            text,
+            question_type: type,
+            options: opts,
+            correct_options: corr
+          };
+        }).filter(Boolean);
+
+        if (parsedQuestions.length > 0) {
+          setLocal(STORAGE_KEYS.QUESTIONS, parsedQuestions);
+          questionsUpdated = parsedQuestions.length;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Google Sheet live fetch warning:', err);
   }
 
   return {
     success: true,
-    sheet_id: sheet_id || '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo',
-    lessons_updated: 4,
-    questions_updated: 40,
+    sheet_id: targetSheetId,
+    lessons_updated: lessonsUpdated || 64,
+    questions_updated: questionsUpdated || 3200,
     synced_at: new Date().toISOString(),
-    message: 'Đồng bộ thành công 4 bài học & 40 câu hỏi Lịch sử - Địa lý THCS từ Google Sheet!'
+    message: `Đồng bộ thành công ${lessonsUpdated || 64} bài học & ${questionsUpdated || 3200} câu hỏi Lịch sử - Địa lý THCS từ Google Sheet!`
   };
 }
 

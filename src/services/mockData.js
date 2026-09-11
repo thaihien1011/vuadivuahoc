@@ -1035,7 +1035,7 @@ export const INITIAL_LESSONS = [
       "y": 90.2
     },
     "is_active": true,
-    "intro_text": "Bạc Liêu – Quê hương Dạ cổ hoài lang & Giai thoại Công tử Bạc Liêu. Nằm trên bán đảo Cà Mau ven Biển Đông, Bạc Liêu được coi là một trong những cái nôi của nghệ thuật Đờn ca tài tử Nam Bộ di sản văn hóa phi vật thể thế giới UNESCO. Nơi đây cố nhạc sĩ Cao Văn Lầu đã sáng tác nên bản Dạ cổ hoài lang bất hủ tiền thân của vọng cổ. Mảnh đất này còn nổi tiếng với Dinh thự Công tử Bạc Liêu lộng lẫy và cánh đồng điện gió ven biển khổng lồ.",
+    "intro_text": "Bạc Liêu là vùng đất ven biển giàu bản sắc văn hóa và truyền thống lịch sử của đồng bằng sông Cửu Long, gắn liền với giai thoại xa hoa của các vị Công tử Bạc Liêu giàu có một thời. Nơi đây là cái nôi nghệ thuật đờn ca tài tử Nam Bộ, quê hương của cố nhạc sĩ Cao Văn Lầu với bản vọng cổ bất hủ \"Dạ cổ hoài lang\" đặt nền móng cho nghệ thuật cải lương. Bạc Liêu sở hữu điểm đến tâm linh linh thiêng như khu Phật bà Nam Hải và nhà thờ Cha Diệp tại Tắc Sậy. Kinh tế tỉnh đang vươn mình mạnh mẽ với mô hình nuôi trồng thủy sản tôm công nghiệp ứng dụng công nghệ cao, làng nghề muối biển truyền thống, vườn nhãn cổ Hiệp Thành trăm tuổi, đặc biệt là cánh đồng điện gió ven biển khổng lồ khai thác năng lượng sạch và du lịch sinh thái xanh.",
     "intro_video_url": ""
   },
   {
