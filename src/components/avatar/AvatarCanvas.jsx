@@ -13,18 +13,27 @@ import { WARDROBE_ITEMS_CATALOG } from '../../config/constants';
 export default function AvatarCanvas({ avatarConfig = {}, body = null, gender = null, size = 160, className = '' }) {
   const [imgErrors, setImgErrors] = useState({});
 
-  // Determine body type: base (boy) vs body_female (girl)
+  // Determine body type: base (boy) vs base_female (girl)
   let activeBody = body;
   if (!activeBody) {
-    const user = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const st = students.find(s => s.id === user?.uid);
-    activeBody = st?.body || (st?.gender === 'female' || user?.gender === 'female' ? 'body_female' : 'base');
+    if (gender) {
+      activeBody = (gender === 'female' || gender === 'nữ' || gender === 'Nữ') ? 'base_female' : 'base';
+    } else {
+      const user = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
+      const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
+      const st = students.find(s => s.id === user?.uid);
+      const studentGender = st?.gender || user?.gender || 'female';
+      activeBody = st?.body || (studentGender === 'female' || studentGender === 'nữ' ? 'base_female' : 'base');
+    }
+  }
+
+  if (activeBody === 'body_female') {
+    activeBody = 'base_female';
   }
 
   const getEquippedItem = (slot) => {
-    const itemId = avatarConfig[slot];
-    return WARDROBE_ITEMS_CATALOG.find(i => i.id === itemId);
+    const itemId = avatarConfig ? avatarConfig[slot] : null;
+    return itemId ? WARDROBE_ITEMS_CATALOG.find(i => i.id === itemId) : null;
   };
 
   const hairItem = getEquippedItem('hair');
@@ -37,8 +46,8 @@ export default function AvatarCanvas({ avatarConfig = {}, body = null, gender = 
   };
 
   // PNG Layer Image Paths
-  const bodyPng = activeBody === 'body_female' && !imgErrors['body_female'] 
-    ? '/assets/avatar/body/body_female.png' 
+  const bodyPng = activeBody === 'base_female'
+    ? '/assets/avatar/body/base_female.png' 
     : '/assets/avatar/body/base.png';
   const bottomPng = bottomItem?.imagePath || (bottomItem ? `/assets/avatar/bottom/${bottomItem.id}.png` : null);
   const footwearPng = footwearItem?.imagePath || (footwearItem ? `/assets/avatar/footwear/${footwearItem.id}.png` : null);

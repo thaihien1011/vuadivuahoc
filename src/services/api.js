@@ -528,14 +528,40 @@ export async function equipWardrobeItem(item_id) {
     student.avatar_config = { hair: null, top: null, bottom_or_skirt: null, footwear: null };
   }
 
-  student.avatar_config[item.slot] = item_id;
+  // Toggle: If currently equipped, unequip it!
+  const isCurrentlyEquipped = student.avatar_config[item.slot] === item_id;
+  if (isCurrentlyEquipped) {
+    student.avatar_config[item.slot] = null;
+  } else {
+    student.avatar_config[item.slot] = item_id;
+  }
 
   setLocal(STORAGE_KEYS.STUDENTS, students);
+  syncStudentToFirestore(student);
 
   return {
-    equipped: true,
+    equipped: !isCurrentlyEquipped,
     slot: item.slot,
     avatar_config: student.avatar_config
+  };
+}
+
+export async function unequipWardrobeSlot(slotKey) {
+  const user = getCurrentAuthUser();
+  if (!user) throw new Error('PERMISSION_DENIED: Chưa đăng nhập');
+
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const student = students.find(s => s.id === user.uid);
+
+  if (student && student.avatar_config) {
+    student.avatar_config[slotKey] = null;
+    setLocal(STORAGE_KEYS.STUDENTS, students);
+    syncStudentToFirestore(student);
+  }
+
+  return {
+    slot: slotKey,
+    avatar_config: student?.avatar_config || {}
   };
 }
 
