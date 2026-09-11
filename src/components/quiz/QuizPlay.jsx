@@ -203,15 +203,20 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
 
   const formatYoutubeEmbedUrl = (url) => {
     if (!url) return '';
-    if (url.includes('youtube.com/watch?v=')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
+    const cleanUrl = url.trim();
+    if (cleanUrl.includes('youtube.com/watch?v=')) {
+      const videoId = cleanUrl.split('v=')[1]?.split('&')[0]?.split('?')[0];
       return `https://www.youtube.com/embed/${videoId}`;
     }
-    if (url.includes('youtu.be/')) {
-      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    if (cleanUrl.includes('youtu.be/')) {
+      const videoId = cleanUrl.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0];
       return `https://www.youtube.com/embed/${videoId}`;
     }
-    return url;
+    if (cleanUrl.includes('youtube.com/shorts/')) {
+      const videoId = cleanUrl.split('shorts/')[1]?.split('?')[0]?.split('&')[0];
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return cleanUrl;
   };
 
   return (
