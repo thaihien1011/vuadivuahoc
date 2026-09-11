@@ -653,6 +653,11 @@ function parseCSV(csvText) {
    8. Function: syncQuestions(sheet_id)
    ========================================================================== */
 export async function syncQuestions(sheet_id) {
+  const user = getCurrentAuthUser();
+  if (!user || (user.role !== 'teacher' && user.role !== 'superadmin')) {
+    throw new Error('PERMISSION_DENIED: Chỉ giáo viên hoặc Admin mới có quyền đồng bộ dữ liệu từ Google Sheet');
+  }
+
   const targetSheetId = sheet_id || '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo';
   let lessonsUpdated = 0;
   let questionsUpdated = 0;
@@ -774,9 +779,6 @@ export async function syncQuestions(sheet_id) {
 }
 
 export async function getAllLessons() {
-  // Trigger background auto sync from Google Sheet if needed
-  syncQuestions().catch(() => {});
-
   try {
     const qSnapshot = await getDocs(collection(db, 'lessons'));
     const lessons = [];
