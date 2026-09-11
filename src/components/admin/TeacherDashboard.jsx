@@ -706,10 +706,11 @@ export default function TeacherDashboard() {
                 </div>
                 <button
                   onClick={exportNckhExcelReport}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  disabled={exportJob.isExporting}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Xuất Excel NCKH Đa Sheet</span>
+                  <span>{exportJob.isExporting ? 'Đang Tính Toán Ngầm...' : 'Xuất Ma Trận NCKH (.xlsx)'}</span>
                 </button>
               </div>
 
