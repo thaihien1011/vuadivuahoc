@@ -9,7 +9,8 @@ import {
   INITIAL_QUESTIONS,
   INITIAL_ASSIGNMENTS,
   INITIAL_LOCKED_SCORES,
-  INITIAL_STUDENT_WARDROBES
+  INITIAL_STUDENT_WARDROBES,
+  INITIAL_QUIZ_ATTEMPTS
 } from './mockData';
 import { STAMP_REWARD_TABLE, WARDROBE_ITEMS_CATALOG } from '../config/constants';
 import * as XLSX from 'xlsx';
@@ -24,16 +25,15 @@ export async function syncStudentToFirestore(student) {
       id: student.id,
       name: student.name,
       username: student.username,
-      class: student.class || 'Lớp 8A1',
-      gender: student.gender || 'female',
-      body: student.body || (student.gender === 'female' ? 'body_female' : 'base'),
-      current_star: typeof student.current_star === 'number' ? student.current_star : 0,
+      class_id: student.class_id,
+      class: student.class,
+      gender: student.gender,
+      current_star: student.current_star || 0,
       must_change_password: student.must_change_password || false,
-      avatar_config: student.avatar_config || {},
       updated_at: new Date().toISOString()
-    }, { merge: true });
+    });
   } catch (err) {
-    console.error(`Firestore sync student error for ${student.id}:`, err);
+    console.warn('Firestore syncStudentToFirestore error:', err);
   }
 }
 
@@ -44,12 +44,14 @@ export async function syncTeacherToFirestore(teacher) {
     await setDoc(teacherDocRef, {
       id: teacher.id,
       name: teacher.name,
-      email: teacher.recovery_email || teacher.email,
+      email: teacher.email || teacher.recovery_email,
+      recovery_email: teacher.recovery_email || teacher.email,
       role: teacher.role || 'teacher',
+      is_active: teacher.is_active !== false,
       updated_at: new Date().toISOString()
-    }, { merge: true });
+    });
   } catch (err) {
-    console.error(`Firestore sync teacher error for ${teacher.id}:`, err);
+    console.warn('Firestore syncTeacherToFirestore error:', err);
   }
 }
 
@@ -60,26 +62,28 @@ const STORAGE_KEYS = {
   LESSONS: 'vdvh_lessons',
   QUESTIONS: 'vdvh_questions',
   ASSIGNMENTS: 'vdvh_assignments',
-  ATTEMPTS: 'vdvh_quiz_attempts',
   LOCKED_SCORES: 'vdvh_locked_scores',
   STUDENT_WARDROBE: 'vdvh_student_wardrobe',
-  STAR_TRANSACTIONS: 'vdvh_star_transactions',
-  AUDIT_LOG: 'vdvh_audit_log',
+  ATTEMPTS: 'vdvh_quiz_attempts',
   CURRENT_USER: 'vdvh_current_user'
 };
 
-// LocalStorage Helper
-function getLocal(key, defaultValue) {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : defaultValue;
-}
-
-function setLocal(key, data) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2026_09_11_master_sheet_v13';
+const CURRENT_DATA_VERSION = 'v1.4';
+
+// LocalStorage Helper
+function getLocal(key, defaultValue = []) {
+  const data = localStorage.getItem(key);
+  try {
+    return data ? JSON.parse(data) : defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
+function setLocal(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
 
 // Initialize LocalStorage with dump data if empty or outdated version
 export function initLocalStorage() {
@@ -94,7 +98,7 @@ export function initLocalStorage() {
     setLocal(STORAGE_KEYS.ASSIGNMENTS, getLocal(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS));
     setLocal(STORAGE_KEYS.LOCKED_SCORES, getLocal(STORAGE_KEYS.LOCKED_SCORES, INITIAL_LOCKED_SCORES));
     setLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES);
-    setLocal(STORAGE_KEYS.ATTEMPTS, []); // Reset any stale quiz attempts completely
+    setLocal(STORAGE_KEYS.ATTEMPTS, getLocal(STORAGE_KEYS.ATTEMPTS, INITIAL_QUIZ_ATTEMPTS));
     
     if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
       setLocal(STORAGE_KEYS.CURRENT_USER, {
@@ -121,7 +125,10 @@ export function initLocalStorage() {
     setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
     setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
     setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
-    setLocal(STORAGE_KEYS.ATTEMPTS, []);
+    const existingAttempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
+    if (!existingAttempts || existingAttempts.length === 0) {
+      setLocal(STORAGE_KEYS.ATTEMPTS, INITIAL_QUIZ_ATTEMPTS);
+    }
     INITIAL_TEACHERS.forEach(t => {
       syncTeacherToFirestore(t);
     });

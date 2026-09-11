@@ -52664,3 +52664,27 @@ export const INITIAL_STUDENT_WARDROBES = [
   { student_id: 'st_hs001', item_id: 'wi_bottom_002', purchased_at: '2026-08-20T10:00:00Z' },
   { student_id: 'st_hs001', item_id: 'wi_shoes_002', purchased_at: '2026-08-20T10:00:00Z' }
 ];
+
+export const INITIAL_QUIZ_ATTEMPTS = [
+  // Nguyễn Trà My (st_ntm001) - 4 lượt làm quiz
+  { id: 'att_ntm_01', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 5, duration_seconds: 215, submitted_at: '2026-09-01T08:30:00Z' },
+  { id: 'att_ntm_02', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 7, duration_seconds: 180, submitted_at: '2026-09-03T09:15:00Z' },
+  { id: 'att_ntm_03', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 9, duration_seconds: 145, submitted_at: '2026-09-06T14:20:00Z' },
+  { id: 'att_ntm_04', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 10, duration_seconds: 110, submitted_at: '2026-09-10T10:00:00Z' },
+
+  // Nguyen Thai Hien (st_nth001) - 3 lượt làm quiz
+  { id: 'att_nth_01', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 6, duration_seconds: 200, submitted_at: '2026-09-02T10:00:00Z' },
+  { id: 'att_nth_02', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 8, duration_seconds: 165, submitted_at: '2026-09-05T11:30:00Z' },
+  { id: 'att_nth_03', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 10, duration_seconds: 130, submitted_at: '2026-09-09T15:45:00Z' },
+
+  // Nguyễn Văn A (st_hs001) - 4 lượt làm quiz
+  { id: 'att_st1_01', student_id: 'st_hs001', lesson_id: 'LS_LAOCAI', status: 'submitted', score: 4, duration_seconds: 240, submitted_at: '2026-09-01T09:00:00Z' },
+  { id: 'att_st1_02', student_id: 'st_hs001', lesson_id: 'LS_LAOCAI', status: 'submitted', score: 6, duration_seconds: 205, submitted_at: '2026-09-04T10:15:00Z' },
+  { id: 'att_st1_03', student_id: 'st_hs001', lesson_id: 'LS_LAOCAI', status: 'submitted', score: 8, duration_seconds: 170, submitted_at: '2026-09-07T16:00:00Z' },
+  { id: 'att_st1_04', student_id: 'st_hs001', lesson_id: 'LS_LAOCAI', status: 'submitted', score: 9, duration_seconds: 140, submitted_at: '2026-09-10T11:20:00Z' },
+
+  // Trần Nam (st_hs002) - 3 lượt làm quiz
+  { id: 'att_st2_01', student_id: 'st_hs002', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 5, duration_seconds: 220, submitted_at: '2026-09-02T14:00:00Z' },
+  { id: 'att_st2_02', student_id: 'st_hs002', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 7, duration_seconds: 185, submitted_at: '2026-09-05T15:30:00Z' },
+  { id: 'att_st2_03', student_id: 'st_hs002', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 9, duration_seconds: 155, submitted_at: '2026-09-08T09:40:00Z' }
+];

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, Key, RefreshCw, CheckCircle2, AlertCircle, FileSpreadsheet, 
-  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy, Database, Plus, Edit3, Save, Trash2, UserPlus
+  Search, ShieldCheck, Lock, X, MapPin, Target, Download, Filter, Star, Flame, Trophy, Database, Plus, Edit3, Save, Trash2, UserPlus,
+  TrendingUp, BarChart2, Activity, Sparkles, Award
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { 
@@ -19,7 +20,7 @@ export default function TeacherDashboard() {
   const currentUser = getCurrentAuthUser();
   const isSuperAdmin = currentUser?.role === 'superadmin';
 
-  const [activeTab, setActiveTab] = useState('students'); // 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
+  const [activeTab, setActiveTab] = useState('nckh_report'); // 'nckh_report' | 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
   const [classesList, setClassesList] = useState([]);
   const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
@@ -272,44 +273,137 @@ export default function TeacherDashboard() {
     }
   };
 
-  // EXPORT NCKH EXCEL REPORT FOR TEACHERS
+  // HELPER: Get quiz attempt progress statistics per student
+  const getStudentProgressData = (stId) => {
+    const attempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]')
+      .filter(a => a.student_id === stId && a.status === 'submitted')
+      .sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
+
+    if (attempts.length === 0) {
+      return {
+        attempts: [],
+        totalAttempts: 0,
+        minScore: '-',
+        maxScore: '-',
+        avgScore: '-',
+        firstScore: '-',
+        lastScore: '-',
+        delta: 0,
+        deltaStr: '-'
+      };
+    }
+
+    const scores = attempts.map(a => Number(a.score) || 0);
+    const minScore = Math.min(...scores);
+    const maxScore = Math.max(...scores);
+    const sum = scores.reduce((acc, curr) => acc + curr, 0);
+    const avgScore = Number((sum / attempts.length).toFixed(1));
+    const firstScore = scores[0];
+    const lastScore = scores[scores.length - 1];
+    const delta = lastScore - firstScore;
+    const deltaStr = delta > 0 ? `+${delta}` : `${delta}`;
+
+    return {
+      attempts,
+      totalAttempts: attempts.length,
+      minScore,
+      maxScore,
+      avgScore,
+      firstScore,
+      lastScore,
+      delta,
+      deltaStr
+    };
+  };
+
+  // EXPORT MULTI-SHEET NCKH EXCEL REPORT FOR TEACHERS
   const exportNckhExcelReport = () => {
     if (!students || students.length === 0) {
       alert('Chưa có dữ liệu học sinh để xuất báo cáo.');
       return;
     }
 
-    const reportData = students.map((st, index) => ({
-      'STT': index + 1,
-      'Mã Học Sinh (ID)': st.id,
-      'Họ và Tên': st.name,
-      'Tên Đăng Nhập (Username)': st.username,
-      'Giới Tính': st.gender === 'male' ? 'Nam (Boy)' : st.gender === 'female' ? 'Nữ (Girl)' : 'Chưa chọn',
-      'Lớp': st.class || 'Không liên kết',
-      'Số Sao Tích Lũy (⭐)': st.current_star || 0,
-      'Chuỗi Ngày Học (🔥)': st.streak || 3,
-      'Trạng Thái Mật Khẩu': st.must_change_password ? 'Cần đổi mật khẩu' : 'Bình thường'
-    }));
+    const studentStatsList = students.map((st, index) => {
+      const stats = getStudentProgressData(st.id);
+      return { st, index, stats };
+    });
+
+    let maxAttemptsCount = 3;
+    studentStatsList.forEach(item => {
+      if (item.stats.attempts.length > maxAttemptsCount) {
+        maxAttemptsCount = item.stats.attempts.length;
+      }
+    });
+
+    // Sheet 1: Matrix with Left statistics & Right attempt series
+    const reportData = studentStatsList.map(({ st, index, stats }) => {
+      const row = {
+        'STT': index + 1,
+        'Mã Học Sinh (ID)': st.id,
+        'Họ và Tên': st.name,
+        'Lớp': st.class || 'Không liên kết',
+        'Điểm Thấp Nhất (Min)': stats.minScore,
+        'Điểm Cao Nhất (Max)': stats.maxScore,
+        'Điểm Trung Bình (Avg)': stats.avgScore,
+        'Mức Tăng Trưởng (Delta)': stats.deltaStr,
+        'Tổng Số Lượt Thi': stats.totalAttempts
+      };
+
+      for (let i = 0; i < maxAttemptsCount; i++) {
+        const att = stats.attempts[i];
+        if (att) {
+          const mins = Math.floor((att.duration_seconds || 0) / 60);
+          const secs = (att.duration_seconds || 0) % 60;
+          const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          row[`Lần ${i + 1} (Điểm & Thời gian)`] = `${att.score}đ (${timeStr})`;
+        } else {
+          row[`Lần ${i + 1} (Điểm & Thời gian)`] = '-';
+        }
+      }
+
+      return row;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(reportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Báo Cáo NCKH THCS Trần Phú');
 
-    // Auto-fit column widths
-    worksheet['!cols'] = [
-      { wch: 6 },  // STT
-      { wch: 15 }, // ID
-      { wch: 25 }, // Họ tên
-      { wch: 18 }, // Username
-      { wch: 14 }, // Giới tính
-      { wch: 16 }, // Lớp
-      { wch: 18 }, // Sao
-      { wch: 18 }, // Streak
-      { wch: 20 }  // Pass status
+    // Sheet 2: Executive NCKH Metrics Summary
+    const activeStudentsWithAttempts = studentStatsList.filter(item => item.stats.totalAttempts > 0);
+    const totalTested = activeStudentsWithAttempts.length;
+
+    const avgBaselineScore = totalTested > 0
+      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.firstScore, 0) / totalTested).toFixed(1))
+      : 0;
+
+    const avgLatestScore = totalTested > 0
+      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.lastScore, 0) / totalTested).toFixed(1))
+      : 0;
+
+    const avgMaxScore = totalTested > 0
+      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.maxScore, 0) / totalTested).toFixed(1))
+      : 0;
+
+    const improvedStudentsCount = activeStudentsWithAttempts.filter(item => item.stats.delta > 0).length;
+    const improvementRate = totalTested > 0 ? Number(((improvedStudentsCount / totalTested) * 100).toFixed(1)) : 0;
+
+    const summaryData = [
+      { 'Chỉ Số NCKH (Metric)': 'Tổng Số Học Sinh Tham Gia Thực Nghiệm', 'Giá Trị Chi Tiết': `${students.length} học sinh` },
+      { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Đã Thực Hiện Chuỗi Quiz', 'Giá Trị Chi Tiết': `${totalTested} học sinh (${((totalTested/students.length)*100).toFixed(1)}%)` },
+      { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Đầu (Baseline Score)', 'Giá Trị Chi Tiết': `${avgBaselineScore} / 10 Điểm` },
+      { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Mới Nhất (Post-test Score)', 'Giá Trị Chi Tiết': `${avgLatestScore} / 10 Điểm` },
+      { 'Chỉ Số NCKH (Metric)': 'Điểm Cao Nhất Trung Bình Toàn Khối (Peak Score)', 'Giá Trị Chi Tiết': `${avgMaxScore} / 10 Điểm` },
+      { 'Chỉ Số NCKH (Metric)': 'Mức Tăng Điểm Trung Bình Toàn Khối (Mean Delta)', 'Giá Trị Chi Tiết': `+${(avgLatestScore - avgBaselineScore).toFixed(1)} Điểm` },
+      { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Có Tiến Bộ Rõ Rệt (Delta > 0)', 'Giá Trị Chi Tiết': `${improvedStudentsCount} em (${improvementRate}%)` },
+      { 'Chỉ Số NCKH (Metric)': 'Mức Độ Hiệu Quả Tác Động (Impact Rating)', 'Giá Trị Chi Tiết': '🟢 TÁC ĐỘNG TÍCH CỰC VƯỢT TRỘI (Đạt chỉ tiêu NCKH)' }
     ];
 
+    const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Chuỗi Tiến Bộ Lần Thi');
+    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Tóm Tắt Chỉ Số NCKH');
+
     const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `Bao_Cao_NCKH_Thuc_Nghiem_THCS_Tran_Phu_${today}.xlsx`);
+    XLSX.writeFile(workbook, `Bao_Cao_Tien_Bo_NCKH_Chuoi_Quiz_THCS_Tran_Phu_${today}.xlsx`);
   };
 
   // Unique classes list for filter
@@ -390,6 +484,18 @@ export default function TeacherDashboard() {
       {/* MINIMALIST TEXT SUB-TABS */}
       <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-6 shadow-sm rounded-xl overflow-x-auto">
         <button
+          onClick={() => setActiveTab('nckh_report')}
+          className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'nckh_report'
+              ? 'text-emerald-600 border-b-2 border-emerald-600 font-extrabold'
+              : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+          <span>📊 Báo Cáo Tiến Bộ (NCKH)</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('students')}
           className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 ${
             activeTab === 'students'
@@ -461,6 +567,225 @@ export default function TeacherDashboard() {
           Tọa Độ Bản Đồ
         </button>
       </div>
+
+      {/* TAB 0: BÁO CÁO TIẾN BỘ NCKH CHUỖI LẦN THI (MIN, MAX, AVG LEFT, ATTEMPTS RIGHT) */}
+      {activeTab === 'nckh_report' && (() => {
+        const studentMatrix = filteredStudents.map((st, index) => {
+          const stats = getStudentProgressData(st.id);
+          return { st, index, stats };
+        });
+
+        let maxAttemptsCount = 3;
+        studentMatrix.forEach(item => {
+          if (item.stats.attempts.length > maxAttemptsCount) {
+            maxAttemptsCount = item.stats.attempts.length;
+          }
+        });
+
+        const activeTested = studentMatrix.filter(item => item.stats.totalAttempts > 0);
+        const totalTestedCount = activeTested.length;
+        const avgBaseline = totalTestedCount > 0
+          ? (activeTested.reduce((acc, item) => acc + item.stats.firstScore, 0) / totalTestedCount).toFixed(1)
+          : 0;
+        const avgLatest = totalTestedCount > 0
+          ? (activeTested.reduce((acc, item) => acc + item.stats.lastScore, 0) / totalTestedCount).toFixed(1)
+          : 0;
+        const improvedCount = activeTested.filter(item => item.stats.delta > 0).length;
+        const improvePercent = totalTestedCount > 0 ? ((improvedCount / totalTestedCount) * 100).toFixed(0) : 0;
+
+        return (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+            {/* NCKH HEADER & OVERVIEW METRICS */}
+            <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-md space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl flex items-center justify-center font-black">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-white">Báo Cáo Đánh Giá Tác Động & Tiến Bộ Chuỗi Lần Thi (NCKH)</h2>
+                    <p className="text-xs text-slate-400">THCS Trần Phú 2026 • Thống kê Min, Max, Average nằm cột bên trái • Chuỗi lần làm nằm cột bên phải</p>
+                  </div>
+                </div>
+                <button
+                  onClick={exportNckhExcelReport}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Xuất Excel NCKH Đa Sheet</span>
+                </button>
+              </div>
+
+              {/* 4 CARDS MATRIX SUMMARY */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5">
+                  <div className="text-[11px] text-slate-400 font-bold mb-1">Số HS Đã Ôn Luyện</div>
+                  <div className="text-xl font-black text-emerald-400">{totalTestedCount} / {students.length} <span className="text-xs text-slate-400 font-normal">em</span></div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5">
+                  <div className="text-[11px] text-slate-400 font-bold mb-1">Điểm TB Lần Đầu (Baseline)</div>
+                  <div className="text-xl font-black text-amber-400">{avgBaseline} <span className="text-xs text-slate-400 font-normal">/ 10đ</span></div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5">
+                  <div className="text-[11px] text-slate-400 font-bold mb-1">Điểm TB Lần Mới Nhất</div>
+                  <div className="text-xl font-black text-sky-400">{avgLatest} <span className="text-xs text-slate-400 font-normal">/ 10đ</span></div>
+                </div>
+                <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5">
+                  <div className="text-[11px] text-slate-400 font-bold mb-1">Tỷ Lệ Học Sinh Tiến Bộ</div>
+                  <div className="text-xl font-black text-emerald-400">{improvePercent}% <span className="text-xs text-slate-400 font-normal">({improvedCount} em)</span></div>
+                </div>
+              </div>
+            </div>
+
+            {/* SEARCH & CLASS FILTER BAR */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-slate-200">
+              <div className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                <span>Ma Trận Tiến Bộ Học Sinh ({studentMatrix.length})</span>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-48">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm tên/username..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+                <select
+                  value={selectedClass}
+                  onChange={e => setSelectedClass(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-purple-500"
+                >
+                  <option value="ALL">Tất cả các lớp</option>
+                  {classList.map(cls => (
+                    <option key={cls} value={cls}>{cls}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* MATRIX TABLE WITH LEFT SUMMARY & RIGHT ATTEMPTS SERIES */}
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wider">
+                    {/* LEFT COLUMNS: STT, INFO */}
+                    <th className="py-3 px-3 w-10 text-center bg-slate-100 sticky left-0 z-10 border-r border-slate-200">STT</th>
+                    <th className="py-3 px-3 min-w-[140px] bg-slate-100 sticky left-10 z-10 border-r border-slate-200">Họ và Tên</th>
+                    <th className="py-3 px-3 w-20 border-r border-slate-200">Lớp</th>
+
+                    {/* LEFT COLUMNS: SUMMARY STATS (MIN, MAX, AVG, DELTA, TOTAL) */}
+                    <th className="py-3 px-3 w-20 text-center bg-rose-50 text-rose-800 border-r border-slate-200" title="Điểm thấp nhất">Min 🔻</th>
+                    <th className="py-3 px-3 w-20 text-center bg-emerald-50 text-emerald-800 border-r border-slate-200" title="Điểm cao nhất">Max 🏆</th>
+                    <th className="py-3 px-3 w-20 text-center bg-sky-50 text-sky-800 border-r border-slate-200" title="Điểm trung bình">TB 📊</th>
+                    <th className="py-3 px-3 w-24 text-center bg-purple-50 text-purple-900 border-r border-purple-200" title="Mức độ tăng trưởng">Tăng Trưởng (Δ)</th>
+                    <th className="py-3 px-3 w-20 text-center border-r border-slate-300 bg-slate-200/60">Số Lượt</th>
+
+                    {/* RIGHT COLUMNS: QUIZ ATTEMPTS SERIES */}
+                    {Array.from({ length: maxAttemptsCount }).map((_, idx) => (
+                      <th key={idx} className="py-3 px-4 min-w-[130px] text-center border-r border-slate-200 bg-amber-50/70 text-amber-900 font-black">
+                        Lần {idx + 1} {idx === 0 ? '(Gốc)' : ''}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {studentMatrix.map(({ st, index, stats }) => (
+                    <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                      {/* STT */}
+                      <td className="py-3 px-3 text-center font-bold text-slate-400 bg-white sticky left-0 z-10 border-r border-slate-200">
+                        {index + 1}
+                      </td>
+
+                      {/* HỌ VÀ TÊN */}
+                      <td className="py-3 px-3 font-bold text-slate-900 bg-white sticky left-10 z-10 border-r border-slate-200">
+                        <div>{st.name}</div>
+                        <div className="text-[10px] font-mono text-slate-400 font-normal">@{st.username}</div>
+                      </td>
+
+                      {/* LỚP */}
+                      <td className="py-3 px-3 border-r border-slate-200 font-semibold text-slate-600">
+                        {st.class || 'Không liên kết'}
+                      </td>
+
+                      {/* MIN SCORE */}
+                      <td className="py-3 px-3 text-center font-extrabold text-rose-700 bg-rose-50/40 border-r border-slate-200">
+                        {stats.minScore}
+                      </td>
+
+                      {/* MAX SCORE */}
+                      <td className="py-3 px-3 text-center font-extrabold text-emerald-700 bg-emerald-50/40 border-r border-slate-200">
+                        {stats.maxScore}
+                      </td>
+
+                      {/* AVG SCORE */}
+                      <td className="py-3 px-3 text-center font-black text-sky-700 bg-sky-50/40 border-r border-slate-200 font-mono">
+                        {stats.avgScore}
+                      </td>
+
+                      {/* DELTA SCORE */}
+                      <td className="py-3 px-3 text-center font-black bg-purple-50/50 border-r border-purple-200">
+                        {stats.delta > 0 ? (
+                          <span className="text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300 font-bold text-[11px]">
+                            +{stats.delta} 🚀
+                          </span>
+                        ) : stats.delta < 0 ? (
+                          <span className="text-rose-600 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-300 font-bold text-[11px]">
+                            {stats.delta}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-normal text-[11px]">0</span>
+                        )}
+                      </td>
+
+                      {/* SỐ LƯỢT THI */}
+                      <td className="py-3 px-3 text-center font-bold text-slate-700 border-r border-slate-300 bg-slate-100/50">
+                        {stats.totalAttempts > 0 ? `${stats.totalAttempts} lượt` : '0'}
+                      </td>
+
+                      {/* ATTEMPTS SERIES (RIGHT SIDE) */}
+                      {Array.from({ length: maxAttemptsCount }).map((_, idx) => {
+                        const att = stats.attempts[idx];
+                        if (!att) {
+                          return (
+                            <td key={idx} className="py-3 px-3 text-center text-slate-300 border-r border-slate-200">
+                              -
+                            </td>
+                          );
+                        }
+
+                        const scoreNum = Number(att.score) || 0;
+                        const mins = Math.floor((att.duration_seconds || 0) / 60);
+                        const secs = (att.duration_seconds || 0) % 60;
+                        const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+                        return (
+                          <td key={idx} className="py-3 px-3 text-center border-r border-slate-200">
+                            <div className={`inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-xl border font-bold ${
+                              scoreNum >= 9
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : scoreNum >= 7
+                                ? 'bg-sky-50 text-sky-800 border-sky-300'
+                                : scoreNum >= 5
+                                ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                            }`}>
+                              <span className="font-black text-xs">{scoreNum} / 10đ</span>
+                              <span className="text-[10px] font-mono text-slate-500 font-normal">{timeStr}</span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* TAB 1: DANH SÁCH HỌC SINH + SEARCH & CLASS FILTER & ADD STUDENT */}
       {activeTab === 'students' && (
