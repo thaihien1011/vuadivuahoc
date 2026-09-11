@@ -53,8 +53,8 @@ export default function LoginPage({ onLoginSuccess }) {
       <div className="duo-card max-w-md w-full p-8 space-y-6 border-b-8 border-b-emerald-600 shadow-2xl">
         {/* Brand Banner */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-emerald-500 rounded-3xl border-b-4 border-emerald-700 flex items-center justify-center mx-auto shadow-md animate-duo-bounce">
-            <Compass className="w-10 h-10 text-white" />
+          <div className="w-16 h-16 rounded-3xl border-b-4 border-emerald-700 overflow-hidden mx-auto shadow-md animate-duo-bounce bg-emerald-500 p-1">
+            <img src="/assets/logo_default.png" alt="Logo Raccoon" className="w-full h-full object-cover rounded-2xl" />
           </div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
             Vừa Đi Vừa Học

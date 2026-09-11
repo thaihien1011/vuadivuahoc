@@ -11,7 +11,7 @@ import { getCurrentAuthUser, getAllLessons } from '../services/api';
 import { useActiveTheme } from '../services/theme';
 
 export default function StudentDashboardPage({ onLogout }) {
-  const { faceLogoUrl } = useActiveTheme();
+  const { logoUrl, faceLogoUrl } = useActiveTheme();
   const [activeTab, setActiveTab] = useState('map'); // 'map' (Hành trình) | 'wardrobe' | 'leaderboard' | 'profile'
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -58,8 +58,12 @@ export default function StudentDashboardPage({ onLogout }) {
       {/* 2. MOBILE TOP BAR (RESPONSIVE MOBILE VIEW ONLY < 768px) */}
       <div className="md:hidden sticky top-0 left-0 right-0 bg-white border-b border-slate-200 z-40 px-3 py-2 shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#58cc02] rounded-lg flex items-center justify-center text-white">
-            <Compass className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-xl overflow-hidden shadow-sm border border-[#58cc02]/30 bg-[#58cc02]/10 shrink-0">
+            <img 
+              src={logoUrl} 
+              alt="Logo Raccoon" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-black text-xs text-[#58cc02] uppercase tracking-tight">VỪA ĐI VỪA HỌC</span>
         </div>
