@@ -1,5 +1,4 @@
 // AI Assistant Engine for "Vừa Đi Vừa Học" - Raccoon Thám Hiểm (Gemini AI API + Rich Knowledge Engine)
-import { INITIAL_LESSONS, INITIAL_QUESTIONS } from './mockData.js';
 import { normalizeVietnameseText } from '../utils/textUtils.js';
 
 const SYSTEM_PROMPT = `
@@ -417,11 +416,12 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
     }
   }
 
-  // 4. Search dynamic lessons database (INITIAL_LESSONS)
-  const matchedLesson = INITIAL_LESSONS.find(l => {
-    const normLoc = normalizeVietnameseText(l.location_name);
-    const normProv = normalizeVietnameseText(l.province_name);
-    return normalizedQ.includes(normLoc) || normalizedQ.includes(normProv);
+  // 4. Search dynamic lessons database
+  const activeLessons = JSON.parse(localStorage.getItem('vdvh_lessons') || '[]');
+  const matchedLesson = activeLessons.find(l => {
+    const normLoc = normalizeVietnameseText(l.location_name || l.name || '');
+    const normProv = normalizeVietnameseText(l.province_name || l.location_name || '');
+    return (normLoc && normalizedQ.includes(normLoc)) || (normProv && normalizedQ.includes(normProv));
   });
 
   if (matchedLesson) {

@@ -11,10 +11,9 @@ import {
   getWardrobeCatalogTable, saveWardrobeCatalogTable, createWardrobeItemRecord, deleteWardrobeItemRecord,
   createStudentRecord, updateStudentRecord, deleteStudentRecord, toggleStudentStatus,
   getTeachersTable, saveTeachersTable, createTeacherRecord, updateTeacherRecord, deleteTeacherRecord, toggleTeacherStatus,
-  seedFirestoreTables, getCurrentAuthUser
+  seedFirestoreTables, getCurrentAuthUser, getAllLessons
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
-import { INITIAL_LESSONS, INITIAL_QUIZ_ATTEMPTS } from '../../services/mockData';
 
 export default function TeacherDashboard() {
   const currentUser = getCurrentAuthUser();
@@ -69,16 +68,20 @@ export default function TeacherDashboard() {
     is_active: true
   });
 
+  const [lessons, setLessons] = useState([]);
+
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
+  const loadData = async () => {
     const list = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
     setStudents(list);
     setClassesList(getClassesTable());
     setWardrobeCatalog(getWardrobeCatalogTable());
     setTeachersList(getTeachersTable());
+    const liveLessons = await getAllLessons();
+    setLessons(liveLessons);
   };
 
   const handleCreateStudent = (e) => {
@@ -283,11 +286,8 @@ export default function TeacherDashboard() {
   // HELPER: Get quiz attempt progress statistics per student
   const getStudentProgressData = (stId) => {
     let rawAttempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]');
-    if (!rawAttempts || rawAttempts.length === 0) {
-      rawAttempts = INITIAL_QUIZ_ATTEMPTS;
-    }
 
-    const attempts = rawAttempts
+    const attempts = (rawAttempts || [])
       .filter(a => a.student_id === stId && a.status === 'submitted')
       .sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
 
@@ -1421,7 +1421,7 @@ export default function TeacherDashboard() {
 
           <div className="h-[750px] overflow-hidden rounded-xl border border-slate-200">
             <InteractiveMap 
-              lessons={INITIAL_LESSONS} 
+              lessons={lessons} 
               lockedScores={[]} 
               onSelectLesson={(lessonId) => console.log('Admin selected lesson:', lessonId)}
               isAdminMode={true}

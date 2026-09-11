@@ -1,17 +1,6 @@
 // Cloud Functions Simulation API Engine for "Vừa Đi Vừa Học" (vuadivuahoc)
 // Implements 10/10 functions according to cloud-functions-spec.md
 
-import {
-  INITIAL_STUDENTS,
-  INITIAL_TEACHERS,
-  INITIAL_CLASSES,
-  INITIAL_LESSONS,
-  INITIAL_QUESTIONS,
-  INITIAL_ASSIGNMENTS,
-  INITIAL_LOCKED_SCORES,
-  INITIAL_STUDENT_WARDROBES,
-  INITIAL_QUIZ_ATTEMPTS
-} from './mockData';
 import { STAMP_REWARD_TABLE, WARDROBE_ITEMS_CATALOG } from '../config/constants';
 import * as XLSX from 'xlsx';
 import { db } from './firebaseConfig';
@@ -69,7 +58,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v1.5_nckh_matrix';
+const CURRENT_DATA_VERSION = 'v1.6_db_pure';
 
 // LocalStorage Helper
 function getLocal(key, defaultValue = []) {
@@ -85,54 +74,32 @@ function setLocal(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-// Initialize LocalStorage with dump data if empty or outdated version
+// Initialize LocalStorage safely without overwriting live database/synced content
 export function initLocalStorage() {
   const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
 
-  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS) || storedVersion !== CURRENT_DATA_VERSION) {
-    setLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
-    setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
-    setLocal(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
-    setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
-    setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
-    setLocal(STORAGE_KEYS.ASSIGNMENTS, getLocal(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS));
-    setLocal(STORAGE_KEYS.LOCKED_SCORES, getLocal(STORAGE_KEYS.LOCKED_SCORES, INITIAL_LOCKED_SCORES));
-    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES);
-    setLocal(STORAGE_KEYS.ATTEMPTS, getLocal(STORAGE_KEYS.ATTEMPTS, INITIAL_QUIZ_ATTEMPTS));
-    
-    if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
-      setLocal(STORAGE_KEYS.CURRENT_USER, {
-        uid: 'st_nth001',
-        role: 'student',
-        username: 'nguyenthaihien',
-        name: 'Nguyen Thai Hien',
-        gender: 'male',
-        body: 'base'
-      });
-    }
-
-    // Sync initial students & teachers to Cloud Firestore
-    INITIAL_STUDENTS.forEach(st => {
-      syncStudentToFirestore(st);
-    });
-    INITIAL_TEACHERS.forEach(t => {
-      syncTeacherToFirestore(t);
-    });
-
-    localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
-  } else {
-    // Force refresh lessons & questions & teachers to match master data
-    setLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
-    setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
-    setLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
-    const existingAttempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
-    if (!existingAttempts || existingAttempts.length === 0) {
-      setLocal(STORAGE_KEYS.ATTEMPTS, INITIAL_QUIZ_ATTEMPTS);
-    }
-    INITIAL_TEACHERS.forEach(t => {
-      syncTeacherToFirestore(t);
+  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS)) setLocal(STORAGE_KEYS.STUDENTS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.TEACHERS)) setLocal(STORAGE_KEYS.TEACHERS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.CLASSES)) setLocal(STORAGE_KEYS.CLASSES, []);
+  if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) setLocal(STORAGE_KEYS.LESSONS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.QUESTIONS)) setLocal(STORAGE_KEYS.QUESTIONS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.ASSIGNMENTS)) setLocal(STORAGE_KEYS.ASSIGNMENTS, []);
+  if (!localStorage.getItem(STORAGE_KEYS.LOCKED_SCORES)) setLocal(STORAGE_KEYS.LOCKED_SCORES, []);
+  if (!localStorage.getItem(STORAGE_KEYS.STUDENT_WARDROBE)) setLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
+  if (!localStorage.getItem(STORAGE_KEYS.ATTEMPTS)) setLocal(STORAGE_KEYS.ATTEMPTS, []);
+  
+  if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
+    setLocal(STORAGE_KEYS.CURRENT_USER, {
+      uid: 'st_nth001',
+      role: 'student',
+      username: 'nguyenthaihien',
+      name: 'Nguyen Thai Hien',
+      gender: 'male',
+      body: 'base'
     });
   }
+
+  localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
 }
 
 initLocalStorage();
@@ -186,7 +153,7 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
   }
 
   // 1. Fetch lesson directly from local storage first (supports live Google Sheet & Excel sync)
-  const localLessons = getLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
+  const localLessons = getLocal(STORAGE_KEYS.LESSONS, []);
   let lesson = localLessons.find(l => l.id === lesson_id);
 
   if (!lesson) {
@@ -196,13 +163,10 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
         lesson = lessonSnap.data();
       }
     } catch (err) {
-      console.warn('Firestore getDoc lesson error, using local dataset:', err);
+      console.warn('Firestore getDoc lesson error:', err);
     }
   }
 
-  if (!lesson) {
-    lesson = INITIAL_LESSONS.find(l => l.id === lesson_id);
-  }
   if (!lesson) throw new Error('NOT_FOUND: Bài học không tồn tại');
 
   const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
@@ -252,9 +216,10 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
     console.warn('Firestore query questions error, using local dataset:', err);
   }
 
-  // Strict fallback to INITIAL_QUESTIONS strictly matching lesson_id if Firestore query returned 0 items
+  // Fallback to local storage questions strictly matching lesson_id if Firestore query returned 0 items
   if (lessonQuestions.length === 0) {
-    lessonQuestions = INITIAL_QUESTIONS.filter(q => q.lesson_id === lesson_id);
+    const localQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
+    lessonQuestions = localQuestions.filter(q => q.lesson_id === lesson_id);
   }
 
   if (lessonQuestions.length === 0) {
@@ -813,11 +778,14 @@ export async function getAllLessons() {
     qSnapshot.forEach(docSnap => {
       lessons.push(docSnap.data());
     });
-    if (lessons.length > 0) return lessons;
+    if (lessons.length > 0) {
+      setLocal(STORAGE_KEYS.LESSONS, lessons);
+      return lessons;
+    }
   } catch (err) {
     console.error('Firestore getAllLessons error:', err);
   }
-  return getLocal(STORAGE_KEYS.LESSONS, INITIAL_LESSONS);
+  return getLocal(STORAGE_KEYS.LESSONS, []);
 }
 
 export async function importExcelArrayBuffer(arrayBuffer) {
@@ -905,7 +873,7 @@ export async function importExcelArrayBuffer(arrayBuffer) {
 
 // 1. Classes Table API
 export function getClassesTable() {
-  return getLocal(STORAGE_KEYS.CLASSES, INITIAL_CLASSES);
+  return getLocal(STORAGE_KEYS.CLASSES, []);
 }
 
 export function saveClassesTable(classList) {
@@ -948,7 +916,7 @@ export function deleteWardrobeItemRecord(itemId) {
 
 // 3. Student Table Complete CRUD API
 export function createStudentRecord(newStudent) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const studentObj = {
     id: newStudent.id || 'st_' + Date.now(),
     name: newStudent.name,
@@ -970,7 +938,7 @@ export function createStudentRecord(newStudent) {
 }
 
 export function updateStudentRecord(studentId, updatedFields) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const student = students.find(s => s.id === studentId);
   if (!student) throw new Error("Học sinh không tồn tại");
 
@@ -985,7 +953,7 @@ export function updateStudentRecord(studentId, updatedFields) {
 }
 
 export function toggleStudentStatus(studentId) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const student = students.find(s => s.id === studentId);
   if (!student) throw new Error("Học sinh không tồn tại");
 
@@ -996,7 +964,7 @@ export function toggleStudentStatus(studentId) {
 }
 
 export function deleteStudentRecord(studentId) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const filtered = students.filter(s => s.id !== studentId);
   setLocal(STORAGE_KEYS.STUDENTS, filtered);
   return { success: true };
@@ -1004,10 +972,10 @@ export function deleteStudentRecord(studentId) {
 
 // 4. Teacher / Admin Table Complete CRUD API (Super Admin Access)
 export function getTeachersTable() {
-  const teachers = getLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
   const hasSuperAdmin = teachers.some(t => t.id === 'superadmin_001' || t.recovery_email === 'superadmin' || t.role === 'superadmin');
   if (!hasSuperAdmin) {
-    const superAdminObj = INITIAL_TEACHERS.find(t => t.role === 'superadmin') || {
+    const superAdminObj = {
       id: 'superadmin_001',
       name: 'Super Admin Raccoon',
       recovery_email: 'superadmin',
@@ -1089,30 +1057,29 @@ export function deleteTeacherRecord(teacherId) {
 export async function seedFirestoreTables() {
   let seededCount = 0;
   try {
-    // A. Seed Lessons
-    for (let l of INITIAL_LESSONS) {
+    const localLessons = getLocal(STORAGE_KEYS.LESSONS, []);
+    for (let l of localLessons) {
       await setDoc(doc(db, 'lessons', l.id), l, { merge: true });
       seededCount++;
     }
-    // B. Seed Questions
-    for (let q of INITIAL_QUESTIONS) {
+    const localQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
+    for (let q of localQuestions) {
       await setDoc(doc(db, 'questions', q.id), q, { merge: true });
       seededCount++;
     }
-    // C. Seed Wardrobe Items Catalog Table
     for (let item of WARDROBE_ITEMS_CATALOG) {
       await setDoc(doc(db, 'avatar_items', item.id), item, { merge: true });
       seededCount++;
     }
-    // D. Seed Classes Table
-    for (let cls of INITIAL_CLASSES) {
+    const localClasses = getLocal(STORAGE_KEYS.CLASSES, []);
+    for (let cls of localClasses) {
       await setDoc(doc(db, 'classes', cls.id), cls, { merge: true });
       seededCount++;
     }
     return {
       success: true,
       seeded_records: seededCount,
-      message: `Đã khởi tạo & đồng bộ thành công ${seededCount} bản ghi lên Cloud Firestore!`
+      message: `Đã khởi tạo & đồng bộ thành công ${seededCount} bản ghi từ bộ nhớ lên Cloud Firestore!`
     };
   } catch (err) {
     console.error("Firestore seed error:", err);

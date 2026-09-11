@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock, ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { setCurrentAuthUser } from '../services/api';
-import { INITIAL_TEACHERS } from '../services/mockData';
+import { setCurrentAuthUser, getTeachersTable } from '../services/api';
 import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function TeacherLoginPage({ onLoginSuccess }) {
@@ -29,8 +28,7 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
       return;
     }
 
-    const storedTeachers = JSON.parse(localStorage.getItem('vdvh_teachers') || '[]');
-    const allTeachers = storedTeachers.length > 0 ? storedTeachers : INITIAL_TEACHERS;
+    const allTeachers = getTeachersTable();
 
     const teacher = allTeachers.find(t => 
       (t.recovery_email?.toLowerCase() === inputEmail || t.email?.toLowerCase() === inputEmail || t.username?.toLowerCase() === inputEmail) &&
