@@ -92,15 +92,15 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
       <form onSubmit={handleLogin} className="space-y-3.5">
         <div>
           <label className="text-xs font-extrabold text-slate-700 mb-1 block">
-            Email Admin / Giáo viên
+            Tên đăng nhập / Email Admin / Giáo viên
           </label>
           <div className="relative">
             <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="thunga.130992@gmail.com"
+              placeholder="superadmin hoặc email..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-purple-500"
               required
             />
