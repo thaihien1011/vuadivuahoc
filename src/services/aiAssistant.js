@@ -1,6 +1,6 @@
 // AI Assistant Engine for "Vừa Đi Vừa Học" - Raccoon Thám Hiểm (Gemini AI API + Rich Knowledge Engine)
-import { INITIAL_LESSONS, INITIAL_QUESTIONS } from './mockData';
-import { normalizeVietnameseText } from '../utils/textUtils';
+import { INITIAL_LESSONS, INITIAL_QUESTIONS } from './mockData.js';
+import { normalizeVietnameseText } from '../utils/textUtils.js';
 
 const SYSTEM_PROMPT = `
 Bạn là "Gấu Trúc Raccoon Thám Hiểm" - Trợ lý AI thông minh, thân thiện, hào hứng của ứng dụng học tập "Vừa Đi Vừa Học" dành cho học sinh THCS tại Việt Nam.
@@ -329,10 +329,17 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
 
   const normalizedQ = normalizeVietnameseText(userQuestion);
 
-  // 1. Try Gemini REST API (gemini-2.5-flash, gemini-2.0-flash, gemini-1.5-flash) if apiKey configured
-  const effectiveKey = apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+  // 1. Try Gemini REST API with Empirically Verified Working Models
+  const effectiveKey = apiKey || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '') || '';
   if (effectiveKey) {
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    // Empirically verified working models on v1beta API endpoint for this API Key
+    const modelsToTry = [
+      'gemini-2.5-flash',
+      'gemini-flash-lite-latest',
+      'gemini-3-flash-preview',
+      'gemma-4-26b-a4b-it'
+    ];
+
     for (const modelName of modelsToTry) {
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${effectiveKey}`, {
