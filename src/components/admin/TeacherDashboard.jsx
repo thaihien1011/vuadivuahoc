@@ -36,7 +36,7 @@ export default function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
   const [resetModalData, setResetModalData] = useState(null);
-  const [sheetId, setSheetId] = useState('1ntVNq7XVoVsSlQ0Mp_itoTTCt_VQxGQY');
+  const [sheetId, setSheetId] = useState('1J-2H2hlIOwh2Fykv-pXvlF37M7yzboGS');
   const [syncStatus, setSyncStatus] = useState(null);
   const [syncing, setSyncing] = useState(false);
 

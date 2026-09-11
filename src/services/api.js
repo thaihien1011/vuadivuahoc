@@ -660,7 +660,7 @@ export async function syncQuestions(sheet_id) {
 
   return {
     success: true,
-    sheet_id: sheet_id || '1ntVNq7XVoVsSlQ0Mp_itoTTCt_VQxGQY',
+    sheet_id: sheet_id || '1J-2H2hlIOwh2Fykv-pXvlF37M7yzboGS',
     lessons_updated: 4,
     questions_updated: 40,
     synced_at: new Date().toISOString(),
