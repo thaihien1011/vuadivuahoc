@@ -8,8 +8,10 @@ import DuolingoLeftSidebar from '../components/navigation/DuolingoLeftSidebar';
 import StudentProfilePage from './StudentProfilePage';
 import RaccoonAiModal from '../components/ai/RaccoonAiModal';
 import { getCurrentAuthUser, getAllLessons } from '../services/api';
+import { useActiveTheme } from '../services/theme';
 
 export default function StudentDashboardPage({ onLogout }) {
+  const { faceLogoUrl } = useActiveTheme();
   const [activeTab, setActiveTab] = useState('map'); // 'map' (Hành trình) | 'wardrobe' | 'leaderboard' | 'profile'
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -65,10 +67,13 @@ export default function StudentDashboardPage({ onLogout }) {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setIsAiModalOpen(true)}
-            className="flex items-center gap-1 bg-amber-400 text-amber-950 hover:bg-amber-500 font-extrabold text-xs px-2 py-1 rounded-full shadow-md border-b-2 border-amber-600 active:translate-y-0.5 transition-all"
+            className="flex items-center gap-1.5 bg-amber-400 text-amber-950 hover:bg-amber-500 font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border-b-2 border-amber-600 active:translate-y-0.5 transition-all"
+            title="Hỏi Trợ lý Raccoon AI"
           >
-            <Sparkles className="w-3.5 h-3.5 fill-amber-950 animate-pulse" />
-            <span className="hidden sm:inline">AI Hỏi đáp</span>
+            <div className="w-5 h-5 rounded-full overflow-hidden bg-white/30 border border-amber-950/20 shrink-0">
+              <img src={faceLogoUrl} alt="Raccoon AI" className="w-full h-full object-cover" />
+            </div>
+            <span>AI Hỏi đáp</span>
           </button>
           <div className="flex items-center gap-0.5 font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-lg text-xs">
             🔥3
@@ -135,8 +140,8 @@ export default function StudentDashboardPage({ onLogout }) {
         onClick={() => setIsAiModalOpen(true)}
         className="hidden md:flex fixed bottom-6 right-6 z-40 items-center gap-2.5 bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 font-extrabold px-5 py-3 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all border-2 border-white ring-4 ring-amber-400/20 group cursor-pointer"
       >
-        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform">
-          <Sparkles className="w-5 h-5 text-amber-600 fill-amber-400" />
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-inner group-hover:rotate-12 transition-transform overflow-hidden p-0.5 border border-amber-600/30">
+          <img src={faceLogoUrl} alt="Raccoon AI" className="w-full h-full object-cover rounded-full" />
         </div>
         <span className="text-sm uppercase tracking-wide">Hỏi Trợ Lý Raccoon AI</span>
       </button>

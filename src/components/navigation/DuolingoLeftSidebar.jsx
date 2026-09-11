@@ -12,7 +12,7 @@ export default function DuolingoLeftSidebar({
   onLogout,
   onOpenAiAssistant
 }) {
-  const { logoUrl } = useActiveTheme();
+  const { logoUrl, faceLogoUrl } = useActiveTheme();
 
   return (
     <aside className="w-56 bg-white border-r border-slate-200 fixed top-0 bottom-0 left-0 z-40 p-3 flex flex-col justify-between hidden md:flex">
@@ -73,7 +73,9 @@ export default function DuolingoLeftSidebar({
               onClick={onOpenAiAssistant}
               className="w-full duo-nav-link bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 mt-2"
             >
-              <Sparkles className="w-5 h-5 text-sky-600 fill-sky-500 animate-pulse" />
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-sky-300 shrink-0 bg-white p-0.5">
+                <img src={faceLogoUrl} alt="Raccoon AI" className="w-full h-full object-cover rounded-full" />
+              </div>
               <span className="font-extrabold text-sky-800">TRỢ LÝ AI RACCOON</span>
             </button>
           )}
