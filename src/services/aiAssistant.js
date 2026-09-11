@@ -305,9 +305,9 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
     const isMatched = item.names.some(name => normalizedQ.includes(name));
     if (isMatched) {
       if (isRegionQuery) {
-        return `🦝 Chào Nhà thám hiểm! Tỉnh/địa danh ${item.province} thuộc ${item.macroRegion} (${item.region}) của Việt Nam 🗺️!\n\n${item.details}`;
+        return `Chào Nhà thám hiểm! Tỉnh/địa danh ${item.province} thuộc ${item.macroRegion} (${item.region}) của Việt Nam 🗺️!\n\n${item.details}`;
       }
-      return `🦝 Chào Nhà thám hiểm! Raccoon rất vui được giải đáp: Tỉnh/địa danh ${item.province} nằm ở vùng ${item.region} (${item.macroRegion}) ✨.\n\n${item.details}`;
+      return `Chào Nhà thám hiểm! Raccoon rất vui được giải đáp: Tỉnh/địa danh ${item.province} nằm ở vùng ${item.region} (${item.macroRegion}) ✨.\n\n${item.details}`;
     }
   }
 
@@ -320,16 +320,16 @@ export async function askRaccoonAI(userQuestion, apiKey = '') {
 
   if (matchedLesson) {
     if (isRegionQuery) {
-      return `🦝 Chào Nhà thám hiểm! Địa danh ${matchedLesson.location_name} thuộc vùng ${matchedLesson.region} của Việt Nam 🗺️!\n\n${matchedLesson.intro_text || matchedLesson.subtitle}`;
+      return `Chào Nhà thám hiểm! Địa danh ${matchedLesson.location_name} thuộc vùng ${matchedLesson.region} của Việt Nam 🗺️!\n\n${matchedLesson.intro_text || matchedLesson.subtitle}`;
     }
-    return `🦝 Chào Nhà thám hiểm! Raccoon biết về địa danh ${matchedLesson.location_name} nè: ${matchedLesson.intro_text || matchedLesson.subtitle} 📍. Nơi này nằm thuộc vùng ${matchedLesson.region}! Bạn hãy mở cột mốc ${matchedLesson.location_name} trên bản đồ để thi đấu nhé ⭐!`;
+    return `Chào Nhà thám hiểm! Raccoon biết về địa danh ${matchedLesson.location_name} nè: ${matchedLesson.intro_text || matchedLesson.subtitle} 📍. Nơi này nằm thuộc vùng ${matchedLesson.region}! Bạn hãy mở cột mốc ${matchedLesson.location_name} trên bản đồ để thi đấu nhé ⭐!`;
   }
 
   // 4. Products / Specialties Query Intent
   if (normalizedQ.includes("san vat") || normalizedQ.includes("dac san") || normalizedQ.includes("co gi ngon")) {
-    return `🦝 Chào Nhà thám hiểm! Việt Nam ta có 63 tỉnh thành với hàng ngàn sản vật phong phú: Cà phê & Ca cao Tây Nguyên (Đắk Lắk), Chè Tân Cương (Thái Nguyên), Chả mực (Quảng Ninh), Dừa (Bến Tre), Cua (Cà Mau)... Hãy nhập tên tỉnh thành cụ thể để Raccoon giải đáp chi tiết cho bạn nhé 🌾☕!`;
+    return `Chào Nhà thám hiểm! Việt Nam ta có 63 tỉnh thành với hàng ngàn sản vật phong phú: Cà phê & Ca cao Tây Nguyên (Đắk Lắk), Chè Tân Cương (Thái Nguyên), Chả mực (Quảng Ninh), Dừa (Bến Tre), Cua (Cà Mau)... Hãy nhập tên tỉnh thành cụ thể để Raccoon giải đáp chi tiết cho bạn nhé 🌾☕!`;
   }
 
   // 5. Intelligent contextual default response
-  return `🦝 Chào Nhà thám hiểm! Raccoon đã ghi nhận câu hỏi: "${userQuestion}". Việt Nam ta gồm 63 tỉnh thành giàu đẹp với 3 miền Bắc - Trung - Nam và vùng Tây Nguyên hùng vĩ 📜🗺️. Bạn hãy thử hỏi Raccoon về các địa danh như Đắk Lắk, Điện Biên, Hà Nội, Đà Nẵng, Bến Tre, Cà Mau... nhé!`;
+  return `Chào Nhà thám hiểm! Raccoon đã ghi nhận câu hỏi: "${userQuestion}". Việt Nam ta gồm 63 tỉnh thành giàu đẹp với 3 miền Bắc - Trung - Nam và vùng Tây Nguyên hùng vĩ 📜🗺️. Bạn hãy thử hỏi Raccoon về các địa danh như Đắk Lắk, Điện Biên, Hà Nội, Đà Nẵng, Bến Tre, Cà Mau... nhé!`;
 }

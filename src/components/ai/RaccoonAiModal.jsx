@@ -7,7 +7,7 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'Xin chào Nhà thám hiểm! 🦝 Raccoon đây! Bạn có thắc mắc gì về Lịch sử hay Địa lý các tỉnh thành Việt Nam không? Hãy hỏi Raccoon nhé ⭐!'
+      text: 'Xin chào Nhà thám hiểm! Raccoon đây! Bạn có thắc mắc gì về Lịch sử hay Địa lý các tỉnh thành Việt Nam không? Hãy hỏi Raccoon nhé ⭐!'
     }
   ]);
   const [inputQuestion, setInputQuestion] = useState('');
@@ -53,7 +53,9 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 className="font-black text-base leading-tight flex items-center gap-1.5">
-                Raccoon Thám Hiểm 🦝 <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
+                Raccoon Thám Hiểm
+                <img src={logoUrl} alt="Raccoon" className="w-5 h-5 rounded-full object-cover border border-white/40 shadow-sm shrink-0" />
+                <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
               </h3>
               <p className="text-[11px] text-sky-100 font-extrabold uppercase tracking-wider">Trợ Lý AI Lịch Sử & Địa Lý</p>
             </div>
@@ -76,8 +78,8 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
               className={`flex items-start gap-2.5 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}
             >
               {msg.sender === 'ai' ? (
-                <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center text-white shrink-0 shadow-sm text-base">
-                  🦝
+                <div className="w-9 h-9 rounded-xl bg-white border border-sky-300 overflow-hidden shrink-0 shadow-sm p-0.5">
+                  <img src={logoUrl} alt="Raccoon AI" className="w-full h-full object-cover rounded-lg" />
                 </div>
               ) : (
                 <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shrink-0 shadow-sm font-black text-xs">
