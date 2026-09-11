@@ -16,23 +16,42 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
     const inputEmail = email.trim().toLowerCase();
     const inputPass = password.trim();
 
+    // Check direct superadmin credentials
+    if ((inputEmail === 'superadmin' || inputEmail === 'superadmin@vuadivuahoc.edu.vn') && inputPass === 'raccoon2026') {
+      setCurrentAuthUser({
+        uid: 'superadmin_001',
+        role: 'superadmin',
+        username: 'superadmin',
+        name: 'Super Admin Raccoon',
+        email: 'superadmin@vuadivuahoc.edu.vn'
+      });
+      onLoginSuccess('superadmin');
+      return;
+    }
+
     const storedTeachers = JSON.parse(localStorage.getItem('vdvh_teachers') || '[]');
     const allTeachers = storedTeachers.length > 0 ? storedTeachers : INITIAL_TEACHERS;
 
     const teacher = allTeachers.find(t => 
-      (t.recovery_email?.toLowerCase() === inputEmail || t.email?.toLowerCase() === inputEmail) &&
-      (t.password === inputPass || inputPass === 'thunga0992' || inputPass === '123456')
+      (t.recovery_email?.toLowerCase() === inputEmail || t.email?.toLowerCase() === inputEmail || t.username?.toLowerCase() === inputEmail) &&
+      (t.password === inputPass || (t.role === 'superadmin' && inputPass === 'raccoon2026') || inputPass === 'thunga0992' || inputPass === '123456')
     );
 
     if (teacher) {
+      if (teacher.is_active === false) {
+        setErrorMsg('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ Super Admin.');
+        return;
+      }
+
+      const role = teacher.role || 'teacher';
       setCurrentAuthUser({
         uid: teacher.id,
-        role: 'teacher',
+        role: role,
         username: teacher.recovery_email || teacher.email || 'admin',
         name: teacher.name,
         email: teacher.recovery_email || teacher.email
       });
-      onLoginSuccess('teacher');
+      onLoginSuccess(role);
     } else if (inputEmail === 'thunga.130992@gmail.com' && inputPass === 'thunga0992') {
       setCurrentAuthUser({
         uid: 'teacher_002',
@@ -121,13 +140,15 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
       </form>
 
       {/* Account Info Box */}
-      <div className="bg-purple-50 border border-purple-100 p-3 rounded-xl space-y-1">
-        <div className="text-[11px] font-black text-purple-900">Tài khoản Admin đã sẵn sàng:</div>
-        <div className="text-[11px] text-slate-700 font-mono">
-          Email: <span className="font-bold text-purple-700">thunga.130992@gmail.com</span>
+      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl space-y-1.5">
+        <div className="text-[11px] font-black text-amber-950 flex items-center gap-1">
+          <span>👑 Super Admin:</span>
         </div>
         <div className="text-[11px] text-slate-700 font-mono">
-          Mật khẩu: <span className="font-bold text-purple-700">thunga0992</span>
+          Username: <span className="font-bold text-amber-800">superadmin</span> | Pass: <span className="font-bold text-amber-800">raccoon2026</span>
+        </div>
+        <div className="text-[10px] text-slate-500 border-t border-amber-200/60 pt-1 mt-1 font-mono">
+          GV Admin: <span className="font-semibold text-slate-700">thunga.130992@gmail.com</span> (Pass: <span className="font-semibold text-slate-700">thunga0992</span>)
         </div>
       </div>
     </div>

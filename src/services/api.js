@@ -812,6 +812,7 @@ export function createStudentRecord(newStudent) {
     body: newStudent.gender === 'female' ? 'body_female' : 'base',
     current_star: parseInt(newStudent.current_star) || 0,
     streak: 3,
+    is_active: newStudent.is_active !== undefined ? newStudent.is_active : true,
     must_change_password: false,
     created_at: new Date().toISOString()
   };
@@ -837,10 +838,104 @@ export function updateStudentRecord(studentId, updatedFields) {
   return { success: true, student };
 }
 
+export function toggleStudentStatus(studentId) {
+  const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
+  const student = students.find(s => s.id === studentId);
+  if (!student) throw new Error("Học sinh không tồn tại");
+
+  student.is_active = student.is_active === false ? true : false;
+  setLocal(STORAGE_KEYS.STUDENTS, students);
+  syncStudentToFirestore(student);
+  return { success: true, student };
+}
+
 export function deleteStudentRecord(studentId) {
   const students = getLocal(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
   const filtered = students.filter(s => s.id !== studentId);
   setLocal(STORAGE_KEYS.STUDENTS, filtered);
+  return { success: true };
+}
+
+// 4. Teacher / Admin Table Complete CRUD API (Super Admin Access)
+export function getTeachersTable() {
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
+  const hasSuperAdmin = teachers.some(t => t.id === 'superadmin_001' || t.recovery_email === 'superadmin' || t.role === 'superadmin');
+  if (!hasSuperAdmin) {
+    const superAdminObj = INITIAL_TEACHERS.find(t => t.role === 'superadmin') || {
+      id: 'superadmin_001',
+      name: 'Super Admin Raccoon',
+      recovery_email: 'superadmin',
+      email: 'superadmin@vuadivuahoc.edu.vn',
+      password: 'raccoon2026',
+      role: 'superadmin',
+      is_active: true
+    };
+    teachers.unshift(superAdminObj);
+    setLocal(STORAGE_KEYS.TEACHERS, teachers);
+  }
+  return teachers;
+}
+
+export function saveTeachersTable(teachers) {
+  setLocal(STORAGE_KEYS.TEACHERS, teachers);
+  teachers.forEach(t => syncTeacherToFirestore(t));
+}
+
+export function createTeacherRecord(newTeacher) {
+  const teachers = getTeachersTable();
+  const emailVal = (newTeacher.email || newTeacher.username || '').toLowerCase().trim();
+  const existing = teachers.find(t => t.email?.toLowerCase() === emailVal || t.recovery_email?.toLowerCase() === emailVal);
+  if (existing) {
+    throw new Error(`Email / Username "${emailVal}" đã tồn tại trong hệ thống!`);
+  }
+
+  const teacherObj = {
+    id: newTeacher.id || 'teacher_' + Date.now(),
+    name: newTeacher.name.trim(),
+    recovery_email: emailVal,
+    email: emailVal,
+    password: newTeacher.password?.trim() || '123456',
+    role: newTeacher.role || 'teacher',
+    is_active: newTeacher.is_active !== undefined ? newTeacher.is_active : true,
+    created_at: new Date().toISOString()
+  };
+
+  const updated = [teacherObj, ...teachers];
+  saveTeachersTable(updated);
+  return { success: true, teacher: teacherObj };
+}
+
+export function updateTeacherRecord(teacherId, updatedFields) {
+  const teachers = getTeachersTable();
+  const teacher = teachers.find(t => t.id === teacherId);
+  if (!teacher) throw new Error("Tài khoản quản trị viên không tồn tại");
+
+  Object.assign(teacher, updatedFields);
+  saveTeachersTable(teachers);
+  return { success: true, teacher };
+}
+
+export function toggleTeacherStatus(teacherId) {
+  const teachers = getTeachersTable();
+  const teacher = teachers.find(t => t.id === teacherId);
+  if (!teacher) throw new Error("Tài khoản không tồn tại");
+  if (teacher.role === 'superadmin') {
+    throw new Error("Không thể ngừng kích hoạt tài khoản Super Admin chính");
+  }
+
+  teacher.is_active = teacher.is_active === false ? true : false;
+  saveTeachersTable(teachers);
+  return { success: true, teacher };
+}
+
+export function deleteTeacherRecord(teacherId) {
+  const teachers = getTeachersTable();
+  const target = teachers.find(t => t.id === teacherId);
+  if (target && target.role === 'superadmin') {
+    throw new Error("Không thể xóa tài khoản Super Admin chính");
+  }
+  const filtered = teachers.filter(t => t.id !== teacherId);
+  saveTeachersTable(filtered);
   return { success: true };
 }
 

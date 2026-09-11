@@ -3,18 +3,31 @@
 
 export const INITIAL_TEACHERS = [
   {
+    id: 'superadmin_001',
+    name: 'Super Admin Raccoon',
+    recovery_email: 'superadmin',
+    email: 'superadmin@vuadivuahoc.edu.vn',
+    password: 'raccoon2026',
+    role: 'superadmin',
+    is_active: true
+  },
+  {
     id: 'teacher_001',
     name: 'Cô Nguyễn Thị Hoa (GV Sử - Địa)',
     recovery_email: 'hoa.nguyen@thcstranphu.edu.vn',
+    email: 'hoa.nguyen@thcstranphu.edu.vn',
     password: '123456',
-    role: 'teacher'
+    role: 'teacher',
+    is_active: true
   },
   {
     id: 'teacher_002',
     name: 'Trần Thị Thu Nga',
     recovery_email: 'thunga.130992@gmail.com',
+    email: 'thunga.130992@gmail.com',
     password: 'thunga0992',
-    role: 'teacher'
+    role: 'teacher',
+    is_active: true
   }
 ];
 

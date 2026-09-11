@@ -8,19 +8,25 @@ import {
   adminResetPassword, syncQuestions, importExcelArrayBuffer,
   getClassesTable, saveClassesTable, deleteClassRecord,
   getWardrobeCatalogTable, saveWardrobeCatalogTable, createWardrobeItemRecord, deleteWardrobeItemRecord,
-  createStudentRecord, updateStudentRecord, deleteStudentRecord,
-  seedFirestoreTables
+  createStudentRecord, updateStudentRecord, deleteStudentRecord, toggleStudentStatus,
+  getTeachersTable, saveTeachersTable, createTeacherRecord, updateTeacherRecord, deleteTeacherRecord, toggleTeacherStatus,
+  seedFirestoreTables, getCurrentAuthUser
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 import { INITIAL_LESSONS } from '../../services/mockData';
 
 export default function TeacherDashboard() {
-  const [activeTab, setActiveTab] = useState('students'); // 'students' | 'classes' | 'wardrobe_catalog' | 'sync' | 'map'
+  const currentUser = getCurrentAuthUser();
+  const isSuperAdmin = currentUser?.role === 'superadmin';
+
+  const [activeTab, setActiveTab] = useState('students'); // 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
   const [classesList, setClassesList] = useState([]);
   const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
+  const [teachersList, setTeachersList] = useState([]);
   const [selectedClass, setSelectedClass] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
   const [resetModalData, setResetModalData] = useState(null);
   const [sheetId, setSheetId] = useState('1ntVNq7XVoVsSlQ0Mp_itoTTCt_VQxGQY');
   const [syncStatus, setSyncStatus] = useState(null);
@@ -40,7 +46,19 @@ export default function TeacherDashboard() {
     username: '',
     gender: 'male',
     class: 'Lớp 8/8',
-    current_star: 0
+    current_star: 0,
+    is_active: true
+  });
+
+  // Admin / Teacher Modals State
+  const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState(null);
+  const [teacherForm, setTeacherForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'teacher',
+    is_active: true
   });
 
   useEffect(() => {
@@ -52,6 +70,7 @@ export default function TeacherDashboard() {
     setStudents(list);
     setClassesList(getClassesTable());
     setWardrobeCatalog(getWardrobeCatalogTable());
+    setTeachersList(getTeachersTable());
   };
 
   const handleCreateStudent = (e) => {
@@ -89,6 +108,75 @@ export default function TeacherDashboard() {
       deleteStudentRecord(studentId);
       loadData();
       alert(`Đã xóa học sinh "${studentName}".`);
+    }
+  };
+
+  const handleToggleStudentStatus = (studentId, studentName, currentActive) => {
+    const actionText = currentActive !== false ? 'ngừng kích hoạt' : 'kích hoạt';
+    if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của học sinh "${studentName}"?`)) {
+      try {
+        toggleStudentStatus(studentId);
+        loadData();
+        alert(`Đã ${actionText} tài khoản học sinh "${studentName}".`);
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+  };
+
+  // Teacher / Admin Handlers (Super Admin)
+  const handleCreateTeacher = (e) => {
+    e.preventDefault();
+    if (!teacherForm.name.trim() || !teacherForm.email.trim() || !teacherForm.password.trim()) {
+      alert('Vui lòng điền đầy đủ Tên, Username/Email và Mật khẩu!');
+      return;
+    }
+    try {
+      createTeacherRecord(teacherForm);
+      loadData();
+      setIsAddTeacherOpen(false);
+      setTeacherForm({ name: '', email: '', password: '', role: 'teacher', is_active: true });
+      alert(`Đã tạo tài khoản quản trị "${teacherForm.name}" thành công!`);
+    } catch (err) {
+      alert('Lỗi tạo tài khoản: ' + err.message);
+    }
+  };
+
+  const handleUpdateTeacherSubmit = (e) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+    try {
+      updateTeacherRecord(editingTeacher.id, editingTeacher);
+      loadData();
+      setEditingTeacher(null);
+      alert(`Đã cập nhật thông tin tài khoản "${editingTeacher.name}"!`);
+    } catch (err) {
+      alert('Lỗi cập nhật: ' + err.message);
+    }
+  };
+
+  const handleToggleTeacherStatus = (teacherId, teacherName, currentActive) => {
+    const actionText = currentActive !== false ? 'ngừng kích hoạt' : 'kích hoạt';
+    if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản quản trị "${teacherName}"?`)) {
+      try {
+        toggleTeacherStatus(teacherId);
+        loadData();
+        alert(`Đã ${actionText} tài khoản "${teacherName}".`);
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+  };
+
+  const handleDeleteTeacher = (teacherId, teacherName) => {
+    if (confirm(`Bạn có chắc chắn muốn xóa tài khoản quản trị "${teacherName}" khỏi hệ thống?`)) {
+      try {
+        deleteTeacherRecord(teacherId);
+        loadData();
+        alert(`Đã xóa tài khoản "${teacherName}".`);
+      } catch (err) {
+        alert('Lỗi xóa: ' + err.message);
+      }
     }
   };
 
@@ -335,6 +423,22 @@ export default function TeacherDashboard() {
         </button>
 
         <button
+          onClick={() => setActiveTab('admins')}
+          className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 flex items-center gap-1.5 ${
+            activeTab === 'admins'
+              ? 'text-amber-600 border-b-2 border-amber-600 font-extrabold'
+              : 'text-slate-400 hover:text-slate-700 border-b-2 border-transparent'
+          }`}
+        >
+          <span>👑 Quản Lý Admin & GV ({teachersList.length})</span>
+          {isSuperAdmin && (
+            <span className="bg-amber-100 text-amber-900 border border-amber-300 font-black text-[9px] px-1.5 py-0.5 rounded-full">
+              Super Admin
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('sync')}
           className={`text-xs font-black uppercase tracking-wider pb-1 transition-all shrink-0 ${
             activeTab === 'sync'
@@ -409,13 +513,14 @@ export default function TeacherDashboard() {
                   <th className="p-3">Giới tính</th>
                   <th className="p-3">Lớp</th>
                   <th className="p-3">Điểm Sao</th>
+                  <th className="p-3">Trạng Thái</th>
                   <th className="p-3 text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="p-6 text-center text-slate-400 font-bold">
+                    <td colSpan="7" className="p-6 text-center text-slate-400 font-bold">
                       Không tìm thấy học sinh phù hợp.
                     </td>
                   </tr>
@@ -435,7 +540,27 @@ export default function TeacherDashboard() {
                       </td>
                       <td className="p-3 font-bold text-slate-600">{st.class || 'Không liên kết'}</td>
                       <td className="p-3 font-extrabold text-amber-600">⭐ {st.current_star || 0}</td>
+                      <td className="p-3">
+                        <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                          st.is_active !== false 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {st.is_active !== false ? '🟢 Hoạt động' : '🔴 Đã khóa'}
+                        </span>
+                      </td>
                       <td className="p-3 text-right flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleToggleStudentStatus(st.id, st.name, st.is_active)}
+                          className={`font-extrabold px-2 py-1 rounded-lg border text-xs inline-flex items-center gap-1 transition-colors cursor-pointer ${
+                            st.is_active !== false 
+                              ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200' 
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                          }`}
+                          title={st.is_active !== false ? "Ngừng kích hoạt tài khoản" : "Kích hoạt tài khoản"}
+                        >
+                          {st.is_active !== false ? "Khóa" : "Kích hoạt"}
+                        </button>
                         <button
                           onClick={() => setEditingStudent({ ...st })}
                           className="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-2 py-1 rounded-lg border border-sky-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
@@ -637,7 +762,131 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* TAB 4: ĐỒNG BỘ NẠP FILE EXCEL & CLOUD FIRESTORE SEEDER */}
+      {/* TAB 4: QUẢN LÝ ADMIN & GIÁO VIÊN (SUPER ADMIN ACCESS & TEACHER LIST) */}
+      {activeTab === 'admins' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-slate-900">Quản Lý Tài Khoản Quản Trị Viên & Giáo Viên</h3>
+                {isSuperAdmin && (
+                  <span className="bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                    👑 Super Admin Portal
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 font-medium">Danh sách, tạo mới và phân quyền tài khoản quản trị hệ thống</p>
+            </div>
+
+            <button
+              onClick={() => setIsAddTeacherOpen(true)}
+              className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-extrabold text-xs px-4 py-2 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0 border-b-2 border-amber-700"
+            >
+              <UserPlus className="w-4 h-4 text-slate-950" />
+              <span>+ Thêm Admin / GV Mới</span>
+            </button>
+          </div>
+
+          {/* SEARCH BAR */}
+          <div className="relative w-full max-w-sm">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên hoặc email admin..."
+              value={teacherSearchQuery}
+              onChange={e => setTeacherSearchQuery(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          {/* TABLE OF ADMINS */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-900 font-extrabold uppercase border-b border-slate-200">
+                <tr>
+                  <th className="p-3">Họ và Tên Admin</th>
+                  <th className="p-3">Email / Username</th>
+                  <th className="p-3">Mật Khẩu</th>
+                  <th className="p-3">Vai Trò (Role)</th>
+                  <th className="p-3">Trạng Thái</th>
+                  <th className="p-3 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {teachersList
+                  .filter(t => !teacherSearchQuery.trim() || 
+                    t.name.toLowerCase().includes(teacherSearchQuery.toLowerCase()) || 
+                    (t.email || t.recovery_email || '').toLowerCase().includes(teacherSearchQuery.toLowerCase())
+                  )
+                  .map((t) => {
+                    const isSuper = t.role === 'superadmin' || t.id === 'superadmin_001';
+                    return (
+                      <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3 font-extrabold text-slate-900 flex items-center gap-1.5">
+                          {isSuper ? '👑' : '🏫'}
+                          <span>{t.name}</span>
+                        </td>
+                        <td className="p-3 font-mono text-slate-600">{t.recovery_email || t.email || t.username}</td>
+                        <td className="p-3 font-mono text-slate-600 bg-slate-50 rounded px-2 py-1 inline-block my-1 border border-slate-200">{t.password || '******'}</td>
+                        <td className="p-3">
+                          <span className={`px-2.5 py-0.5 rounded-md font-black text-[10px] uppercase tracking-wider ${
+                            isSuper
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : 'bg-purple-50 text-purple-700 border border-purple-200'
+                          }`}>
+                            {isSuper ? '👑 Super Admin' : '🏫 Admin / GV'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${
+                            t.is_active !== false 
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                              : 'bg-rose-50 text-rose-700 border border-rose-200'
+                          }`}>
+                            {t.is_active !== false ? '🟢 Hoạt động' : '🔴 Đã khóa'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right flex items-center justify-end gap-1.5">
+                          {!isSuper && (
+                            <button
+                              onClick={() => handleToggleTeacherStatus(t.id, t.name, t.is_active)}
+                              className={`font-extrabold px-2 py-1 rounded-lg border text-xs inline-flex items-center gap-1 transition-colors cursor-pointer ${
+                                t.is_active !== false 
+                                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200' 
+                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                              }`}
+                              title={t.is_active !== false ? "Ngừng kích hoạt tài khoản" : "Kích hoạt tài khoản"}
+                            >
+                              {t.is_active !== false ? "Khóa" : "Kích hoạt"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setEditingTeacher({ ...t })}
+                            className="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold px-2.5 py-1 rounded-lg border border-sky-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            Sửa
+                          </button>
+                          {!isSuper && (
+                            <button
+                              onClick={() => handleDeleteTeacher(t.id, t.name)}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 text-xs inline-flex items-center gap-1 transition-colors cursor-pointer"
+                              title="Xóa tài khoản"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: ĐỒNG BỘ NẠP FILE EXCEL & CLOUD FIRESTORE SEEDER */}
       {activeTab === 'sync' && (
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
           {/* MASTER FIRESTORE DATABASE SEEDER */}
@@ -923,14 +1172,28 @@ export default function TeacherDashboard() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Điểm Sao Tích Lũy (⭐):</label>
-                <input
-                  type="number"
-                  value={editingStudent.current_star || 0}
-                  onChange={e => setEditingStudent({ ...editingStudent, current_star: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-amber-600"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Điểm Sao Tích Lũy (⭐):</label>
+                  <input
+                    type="number"
+                    value={editingStudent.current_star || 0}
+                    onChange={e => setEditingStudent({ ...editingStudent, current_star: parseInt(e.target.value) || 0 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-amber-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Trạng Thái Tài Khoản:</label>
+                  <select
+                    value={editingStudent.is_active !== false ? 'true' : 'false'}
+                    onChange={e => setEditingStudent({ ...editingStudent, is_active: e.target.value === 'true' })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="true">🟢 Kích hoạt</option>
+                    <option value="false">🔴 Ngừng kích hoạt</option>
+                  </select>
+                </div>
               </div>
 
               <div className="pt-2 flex justify-end gap-2">
@@ -946,6 +1209,200 @@ export default function TeacherDashboard() {
                   className="bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs px-5 py-2 rounded-xl shadow-md cursor-pointer"
                 >
                   Cập Nhật
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: THÊM TÀI KHOẢN ADMIN / GV MỚI */}
+      {isAddTeacherOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl relative">
+            <button 
+              onClick={() => setIsAddTeacherOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-amber-600" />
+              <h3 className="text-base font-black text-slate-900">Thêm Tài Khoản Admin / GV Mới</h3>
+            </div>
+
+            <form onSubmit={handleCreateTeacher} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Họ và Tên Admin/GV:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Nguyễn Văn Quản Trị"
+                  value={teacherForm.name}
+                  onChange={e => setTeacherForm({ ...teacherForm, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Email / Username:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="admin.nguyen@vuadivuahoc.edu.vn"
+                  value={teacherForm.email}
+                  onChange={e => setTeacherForm({ ...teacherForm, email: e.target.value.toLowerCase().trim() })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Mật Khẩu Mới:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Mật khẩu..."
+                  value={teacherForm.password}
+                  onChange={e => setTeacherForm({ ...teacherForm, password: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Vai Trò (Role):</label>
+                  <select
+                    value={teacherForm.role}
+                    onChange={e => setTeacherForm({ ...teacherForm, role: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="teacher">🏫 Giáo Viên / Admin</option>
+                    <option value="superadmin">👑 Super Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Trạng Thái:</label>
+                  <select
+                    value={teacherForm.is_active !== false ? 'true' : 'false'}
+                    onChange={e => setTeacherForm({ ...teacherForm, is_active: e.target.value === 'true' })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="true">🟢 Kích hoạt</option>
+                    <option value="false">🔴 Khóa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddTeacherOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs px-5 py-2 rounded-xl shadow-md cursor-pointer border-b-2 border-amber-700"
+                >
+                  Tạo Admin Mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: SỬA TÀI KHOẢN ADMIN / GV */}
+      {editingTeacher && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl relative">
+            <button 
+              onClick={() => setEditingTeacher(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-amber-600" />
+              <h3 className="text-base font-black text-slate-900">Sửa Tài Khoản Admin / GV</h3>
+            </div>
+
+            <form onSubmit={handleUpdateTeacherSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Họ và Tên:</label>
+                <input
+                  type="text"
+                  required
+                  value={editingTeacher.name}
+                  onChange={e => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Email / Username:</label>
+                <input
+                  type="text"
+                  required
+                  value={editingTeacher.email || editingTeacher.recovery_email || ''}
+                  onChange={e => setEditingTeacher({ ...editingTeacher, email: e.target.value, recovery_email: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Mật Khẩu:</label>
+                <input
+                  type="text"
+                  value={editingTeacher.password || ''}
+                  onChange={e => setEditingTeacher({ ...editingTeacher, password: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Vai Trò (Role):</label>
+                  <select
+                    value={editingTeacher.role || 'teacher'}
+                    onChange={e => setEditingTeacher({ ...editingTeacher, role: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="teacher">🏫 Giáo Viên / Admin</option>
+                    <option value="superadmin">👑 Super Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Trạng Thái:</label>
+                  <select
+                    value={editingTeacher.is_active !== false ? 'true' : 'false'}
+                    onChange={e => setEditingTeacher({ ...editingTeacher, is_active: e.target.value === 'true' })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="true">🟢 Kích hoạt</option>
+                    <option value="false">🔴 Khóa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeacher(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs px-5 py-2 rounded-xl shadow-md cursor-pointer border-b-2 border-amber-700"
+                >
+                  Cập Nhật Admin
                 </button>
               </div>
             </form>

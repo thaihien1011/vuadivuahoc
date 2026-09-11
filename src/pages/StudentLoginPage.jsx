@@ -20,6 +20,11 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
       return;
     }
 
+    if (student.is_active === false) {
+      alert('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
+      return;
+    }
+
     setCurrentAuthUser({
       uid: student.id,
       role: 'student',

@@ -94,7 +94,7 @@ export default function App() {
       {/* PORTAL 2: TEACHER ADMIN WEB APP (admin.vuadivuahoc) */}
       {appPortal === 'admin' && (
         <>
-          {!currentUser || currentUser.role !== 'teacher' ? (
+          {!currentUser || (currentUser.role !== 'teacher' && currentUser.role !== 'superadmin') ? (
             <div className="app-container min-h-screen flex items-center justify-center p-4">
               <TeacherLoginPage onLoginSuccess={handleLoginSuccess} />
             </div>
@@ -102,9 +102,15 @@ export default function App() {
             <div className="app-container p-4 sm:p-6">
               <div className="flex justify-between items-center mb-6 max-w-5xl mx-auto">
                 <div className="flex items-center gap-2">
-                  <span className="bg-purple-100 text-purple-900 border border-purple-300 px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 shadow-sm">
-                    <ShieldCheck className="w-4 h-4 text-purple-700" />
-                    CỔNG QUẢN TRỊ ADMIN (admin.vuadivuahoc)
+                  <span className={`px-3 py-1 rounded-full text-xs font-black flex items-center gap-1.5 shadow-sm ${
+                    currentUser.role === 'superadmin' 
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                      : 'bg-purple-100 text-purple-900 border border-purple-300'
+                  }`}>
+                    <ShieldCheck className={`w-4 h-4 ${currentUser.role === 'superadmin' ? 'text-amber-700' : 'text-purple-700'}`} />
+                    {currentUser.role === 'superadmin' 
+                      ? '👑 CỔNG QUẢN TRỊ SUPER ADMIN' 
+                      : 'CỔNG QUẢN TRỊ ADMIN (admin.vuadivuahoc)'}
                   </span>
                   <span className="text-xs font-extrabold text-slate-500 hidden sm:inline">
                     | Phiên đăng nhập: {currentUser.name}
@@ -112,7 +118,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold border border-rose-200 text-xs py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+                  className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold border border-rose-200 text-xs py-1.5 px-3 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" /> Đăng Xuất
                 </button>
