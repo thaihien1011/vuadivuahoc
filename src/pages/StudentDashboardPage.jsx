@@ -62,20 +62,29 @@ export default function StudentDashboardPage({ onLogout }) {
           <span className="font-black text-xs text-[#58cc02] uppercase tracking-tight">VỪA ĐI VỪA HỌC</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setIsAiModalOpen(true)}
-            className="flex items-center gap-1 bg-amber-400 text-amber-950 hover:bg-amber-500 font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border-b-2 border-amber-600 active:translate-y-0.5 transition-all"
+            className="flex items-center gap-1 bg-amber-400 text-amber-950 hover:bg-amber-500 font-extrabold text-xs px-2 py-1 rounded-full shadow-md border-b-2 border-amber-600 active:translate-y-0.5 transition-all"
           >
             <Sparkles className="w-3.5 h-3.5 fill-amber-950 animate-pulse" />
-            <span>AI Hỏi đáp</span>
+            <span className="hidden sm:inline">AI Hỏi đáp</span>
           </button>
-          <div className="flex items-center gap-1 font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-xs">
-            🔥 3
+          <div className="flex items-center gap-0.5 font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-lg text-xs">
+            🔥3
           </div>
-          <div className="flex items-center gap-1 font-extrabold text-[#ffb800] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-xs">
-            ⭐ {studentData?.current_star || 0}
+          <div className="flex items-center gap-0.5 font-extrabold text-[#ffb800] bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-lg text-xs">
+            ⭐{studentData?.current_star || 0}
           </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg shadow-sm transition-colors cursor-pointer"
+              title="Đăng xuất"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -113,6 +122,7 @@ export default function StudentDashboardPage({ onLogout }) {
                 <StudentProfilePage
                   studentData={studentData}
                   onUpdateStudent={loadStudentState}
+                  onLogout={onLogout}
                 />
               )}
             </>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Star, Award, CheckCircle2, Save, GraduationCap, Palette } from 'lucide-react';
+import { User, Star, Award, CheckCircle2, Save, GraduationCap, Palette, LogOut } from 'lucide-react';
 import AvatarCanvas from '../components/avatar/AvatarCanvas';
 import { THEMES, getCurrentTheme, applyTheme } from '../services/theme';
 import { syncStudentToFirestore } from '../services/api';
 
-export default function StudentProfilePage({ studentData, onUpdateStudent }) {
+export default function StudentProfilePage({ studentData, onUpdateStudent, onLogout }) {
   const [name, setName] = useState(studentData?.name || 'Nguyễn Văn A');
   const [className, setClassName] = useState(studentData?.class || 'Lớp 8A1');
   const [gender, setGender] = useState(studentData?.gender || 'female');
@@ -90,13 +90,26 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
           </div>
         </div>
 
-        <div className="text-right">
-          <div className="font-black text-sm text-slate-900 leading-tight">
-            {studentData?.name || name || 'Nguyễn Văn A'}
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="font-black text-sm text-slate-900 leading-tight">
+              {studentData?.name || name || 'Nguyễn Văn A'}
+            </div>
+            <span className="badge theme-profile-badge font-mono font-bold text-[11px] px-2.5 py-0.5 mt-0.5 inline-block">
+              ID: {studentData?.id || 'st_hs001'}
+            </span>
           </div>
-          <span className="badge theme-profile-badge font-mono font-bold text-[11px] px-2.5 py-0.5 mt-0.5 inline-block">
-            ID: {studentData?.id || 'st_hs001'}
-          </span>
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-extrabold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+              title="Đăng xuất tài khoản"
+            >
+              <LogOut className="w-4 h-4 text-rose-600" />
+              <span>Đăng xuất</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -254,6 +267,26 @@ export default function StudentProfilePage({ studentData, onUpdateStudent }) {
           </div>
         </form>
       </div>
+
+      {/* DEDICATED LOGOUT SECTION */}
+      {onLogout && (
+        <div className="bg-white border border-rose-200 rounded-xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Tài Khoản & Đăng Xuất</h3>
+              <p className="text-xs text-slate-500 font-bold">Thoát khỏi phiên làm việc hiện tại trên thiết bị này</p>
+            </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
