@@ -42,6 +42,13 @@ export function getThemeLogo(themeId) {
   return '/assets/logo_default.png';
 }
 
+export function getThemeFaceLogo(themeId) {
+  const current = themeId || getCurrentTheme();
+  if (current === 'purple') return '/assets/logo_purple_face.png';
+  if (current === 'explorer') return '/assets/logo_explorer_face.png';
+  return '/assets/logo_default_face.png';
+}
+
 export function applyTheme(themeId) {
   const validTheme = ['default', 'purple', 'explorer'].includes(themeId) ? themeId : 'default';
   localStorage.setItem('vdvh_theme', validTheme);
@@ -58,7 +65,8 @@ export function initTheme() {
 export function useActiveTheme() {
   const [themeState, setThemeState] = React.useState({
     theme: getCurrentTheme(),
-    logoUrl: getThemeLogo(getCurrentTheme())
+    logoUrl: getThemeLogo(getCurrentTheme()),
+    faceLogoUrl: getThemeFaceLogo(getCurrentTheme())
   });
 
   React.useEffect(() => {
@@ -66,7 +74,8 @@ export function useActiveTheme() {
       const activeTheme = e.detail?.theme || getCurrentTheme();
       setThemeState({
         theme: activeTheme,
-        logoUrl: getThemeLogo(activeTheme)
+        logoUrl: getThemeLogo(activeTheme),
+        faceLogoUrl: getThemeFaceLogo(activeTheme)
       });
     };
 

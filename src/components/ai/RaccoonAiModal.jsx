@@ -12,7 +12,7 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
   ]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [loading, setLoading] = useState(false);
-  const { logoUrl } = useActiveTheme();
+  const { logoUrl, faceLogoUrl } = useActiveTheme();
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -31,9 +31,11 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
     setInputQuestion('');
     setMessages(prev => [...prev, { sender: 'user', text: userText }]);
 
+    const isFirstUserMsg = messages.length <= 1;
+
     setLoading(true);
     try {
-      const aiReply = await askRaccoonAI(userText);
+      const aiReply = await askRaccoonAI(userText, '', isFirstUserMsg);
       setMessages(prev => [...prev, { sender: 'ai', text: aiReply }]);
     } catch (err) {
       setMessages(prev => [...prev, { sender: 'ai', text: 'Raccoon đang bận thám hiểm một chút, bạn thử lại sau giây lát nhé ⭐!' }]);
@@ -49,12 +51,12 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
         <div className="bg-sky-500 p-4 text-white flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl overflow-hidden bg-white/20 border-2 border-white/40 p-0.5 shrink-0">
-              <img src={logoUrl} alt="Logo Raccoon AI" className="w-full h-full object-cover rounded-xl" />
+              <img src={faceLogoUrl || logoUrl} alt="Logo Raccoon AI" className="w-full h-full object-cover rounded-xl" />
             </div>
             <div>
               <h3 className="font-black text-base leading-tight flex items-center gap-1.5">
                 Raccoon Thám Hiểm
-                <img src={logoUrl} alt="Raccoon" className="w-5 h-5 rounded-full object-cover border border-white/40 shadow-sm shrink-0" />
+                <img src={faceLogoUrl || logoUrl} alt="Raccoon" className="w-5 h-5 rounded-full object-cover border border-white/40 shadow-sm shrink-0" />
                 <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300" />
               </h3>
               <p className="text-[11px] text-sky-100 font-extrabold uppercase tracking-wider">Trợ Lý AI Lịch Sử & Địa Lý</p>
@@ -79,7 +81,7 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
             >
               {msg.sender === 'ai' ? (
                 <div className="w-9 h-9 rounded-xl bg-white border border-sky-300 overflow-hidden shrink-0 shadow-sm p-0.5">
-                  <img src={logoUrl} alt="Raccoon AI" className="w-full h-full object-cover rounded-lg" />
+                  <img src={faceLogoUrl || logoUrl} alt="Raccoon AI" className="w-full h-full object-cover rounded-lg" />
                 </div>
               ) : (
                 <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shrink-0 shadow-sm font-black text-xs">
