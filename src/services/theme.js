@@ -4,8 +4,8 @@ import React from 'react';
 export const THEMES = [
   {
     id: 'default',
-    name: '🟢 Mặc định (Duolingo Classic)',
-    description: 'Phong cách Duolingo xanh lá tươi sáng, trực quan, năng động.',
+    name: '🟢 Green leave',
+    description: 'Phong cách tươi sáng, trực quan, năng động.',
     primaryColor: '#58cc02',
     accentColor: '#1cb0f6',
     bgColor: '#ffffff',
