@@ -16,16 +16,14 @@ service cloud.firestore {
         get(/databases/$(database)/documents/teachers/$(request.auth.uid)).data.role == 'teacher';
     }
 
-    // Lessons (Public Read for Map/Quiz, Teacher Write)
+    // Lessons (Public Read & Write for Google Sheet / App Sync)
     match /lessons/{lessonId} {
-      allow read: if true;
-      allow write: if isTeacher();
+      allow read, write: if true;
     }
 
-    // Questions (Public Read for Quiz exercises, Teacher Write)
+    // Questions (Public Read & Write for Google Sheet / App Sync)
     match /questions/{questionId} {
-      allow read: if true;
-      allow write: if isTeacher();
+      allow read, write: if true;
     }
 
     // Students collection

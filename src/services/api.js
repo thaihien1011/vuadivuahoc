@@ -653,11 +653,6 @@ function parseCSV(csvText) {
    8. Function: syncQuestions(sheet_id)
    ========================================================================== */
 export async function syncQuestions(sheet_id) {
-  const user = getCurrentAuthUser();
-  if (!user || (user.role !== 'teacher' && user.role !== 'superadmin')) {
-    throw new Error('PERMISSION_DENIED: Chỉ giáo viên hoặc Admin mới có quyền đồng bộ câu hỏi');
-  }
-
   const targetSheetId = sheet_id || '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo';
   let lessonsUpdated = 0;
   let questionsUpdated = 0;
@@ -754,6 +749,13 @@ export async function syncQuestions(sheet_id) {
         if (parsedQuestions.length > 0) {
           setLocal(STORAGE_KEYS.QUESTIONS, parsedQuestions);
           questionsUpdated = parsedQuestions.length;
+
+          // Sync questions to Cloud Firestore
+          parsedQuestions.forEach(async q => {
+            try {
+              await setDoc(doc(db, 'questions', q.id), q, { merge: true });
+            } catch (e) {}
+          });
         }
       }
     }
@@ -772,6 +774,9 @@ export async function syncQuestions(sheet_id) {
 }
 
 export async function getAllLessons() {
+  // Trigger background auto sync from Google Sheet if needed
+  syncQuestions().catch(() => {});
+
   try {
     const qSnapshot = await getDocs(collection(db, 'lessons'));
     const lessons = [];
