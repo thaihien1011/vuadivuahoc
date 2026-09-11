@@ -79,7 +79,7 @@ function setLocal(key, data) {
 }
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2026_09_10_master_sheet_v12';
+const CURRENT_DATA_VERSION = 'v2026_09_11_master_sheet_v13';
 
 // Initialize LocalStorage with dump data if empty or outdated version
 export function initLocalStorage() {
@@ -93,7 +93,7 @@ export function initLocalStorage() {
     setLocal(STORAGE_KEYS.QUESTIONS, INITIAL_QUESTIONS);
     setLocal(STORAGE_KEYS.ASSIGNMENTS, getLocal(STORAGE_KEYS.ASSIGNMENTS, INITIAL_ASSIGNMENTS));
     setLocal(STORAGE_KEYS.LOCKED_SCORES, getLocal(STORAGE_KEYS.LOCKED_SCORES, INITIAL_LOCKED_SCORES));
-    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, getLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES));
+    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, INITIAL_STUDENT_WARDROBES);
     setLocal(STORAGE_KEYS.ATTEMPTS, []); // Reset any stale quiz attempts completely
     
     if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
@@ -517,19 +517,32 @@ export async function equipWardrobeItem(item_id) {
   const item = WARDROBE_ITEMS_CATALOG.find(i => i.id === item_id);
   if (!item) throw new Error('NOT_FOUND: Món đồ không tồn tại');
 
-  const wardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
-  const isOwned = wardrobes.some(w => w.student_id === user.uid && w.item_id === item_id);
-  if (!isOwned) throw new Error('PERMISSION_DENIED: Bạn chưa sở hữu vật phẩm này');
-
   const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const student = students.find(s => s.id === user.uid);
+  if (!student) throw new Error('NOT_FOUND: Học sinh không tồn tại');
 
   if (!student.avatar_config) {
     student.avatar_config = { hair: null, top: null, bottom_or_skirt: null, footwear: null };
   }
 
-  // Toggle: If currently equipped, unequip it!
   const isCurrentlyEquipped = student.avatar_config[item.slot] === item_id;
+
+  // Check ownership: Item is owned if it is in student_wardrobe OR currently in student's avatar_config (default items)
+  const wardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
+  const isOwnedInWardrobe = wardrobes.some(w => w.student_id === user.uid && w.item_id === item_id);
+  const isOwnedInConfig = Object.values(student.avatar_config).includes(item_id);
+
+  if (!isOwnedInWardrobe && !isOwnedInConfig && !isCurrentlyEquipped) {
+    throw new Error('PERMISSION_DENIED: Bạn chưa sở hữu vật phẩm này. Vui lòng chọn Mua ngay!');
+  }
+
+  // Auto-record ownership if it was a default item in avatar_config
+  if (!isOwnedInWardrobe && isOwnedInConfig) {
+    wardrobes.push({ student_id: user.uid, item_id: item_id, purchased_at: new Date().toISOString() });
+    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, wardrobes);
+  }
+
+  // Toggle: If currently equipped, unequip it!
   if (isCurrentlyEquipped) {
     student.avatar_config[item.slot] = null;
   } else {
@@ -540,7 +553,7 @@ export async function equipWardrobeItem(item_id) {
   syncStudentToFirestore(student);
 
   return {
-    equipped: !isCurrentlyEquipped,
+    equipped: student.avatar_config[item.slot] === item_id,
     slot: item.slot,
     avatar_config: student.avatar_config
   };

@@ -52638,6 +52638,10 @@ export const INITIAL_LOCKED_SCORES = [
 ];
 
 export const INITIAL_STUDENT_WARDROBES = [
+  { student_id: 'st_ntm001', item_id: 'wi_hair_002', purchased_at: '2026-09-11T10:00:00Z' },
+  { student_id: 'st_ntm001', item_id: 'wi_top_001', purchased_at: '2026-09-11T10:00:00Z' },
+  { student_id: 'st_ntm001', item_id: 'wi_bottom_002', purchased_at: '2026-09-11T10:00:00Z' },
+  { student_id: 'st_ntm001', item_id: 'wi_shoes_001', purchased_at: '2026-09-11T10:00:00Z' },
   { student_id: 'st_nth001', item_id: 'wi_hair_001', purchased_at: '2026-09-10T10:00:00Z' },
   { student_id: 'st_nth001', item_id: 'wi_top_001', purchased_at: '2026-09-10T10:00:00Z' },
   { student_id: 'st_nth001', item_id: 'wi_bottom_001', purchased_at: '2026-09-10T10:00:00Z' },
