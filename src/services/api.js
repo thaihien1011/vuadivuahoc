@@ -69,7 +69,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v1.4';
+const CURRENT_DATA_VERSION = 'v1.5_nckh_matrix';
 
 // LocalStorage Helper
 function getLocal(key, defaultValue = []) {

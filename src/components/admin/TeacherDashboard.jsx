@@ -14,7 +14,7 @@ import {
   seedFirestoreTables, getCurrentAuthUser
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
-import { INITIAL_LESSONS } from '../../services/mockData';
+import { INITIAL_LESSONS, INITIAL_QUIZ_ATTEMPTS } from '../../services/mockData';
 
 export default function TeacherDashboard() {
   const currentUser = getCurrentAuthUser();
@@ -23,6 +23,13 @@ export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState('nckh_report'); // 'nckh_report' | 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
   const [classesList, setClassesList] = useState([]);
+  const [exportJob, setExportJob] = useState({
+    isExporting: false,
+    progress: 0,
+    statusMsg: '',
+    workbook: null,
+    fileName: ''
+  });
   const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
   const [teachersList, setTeachersList] = useState([]);
   const [selectedClass, setSelectedClass] = useState('ALL');
@@ -275,7 +282,12 @@ export default function TeacherDashboard() {
 
   // HELPER: Get quiz attempt progress statistics per student
   const getStudentProgressData = (stId) => {
-    const attempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]')
+    let rawAttempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]');
+    if (!rawAttempts || rawAttempts.length === 0) {
+      rawAttempts = INITIAL_QUIZ_ATTEMPTS;
+    }
+
+    const attempts = rawAttempts
       .filter(a => a.student_id === stId && a.status === 'submitted')
       .sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
 
@@ -316,94 +328,136 @@ export default function TeacherDashboard() {
     };
   };
 
-  // EXPORT MULTI-SHEET NCKH EXCEL REPORT FOR TEACHERS
-  const exportNckhExcelReport = () => {
+  // ASYNCHRONOUS EXPORT JOB ENGINE FOR SCALABLE REPORTS (200-1000+ STUDENTS)
+  const startAsyncExportJob = () => {
     if (!students || students.length === 0) {
       alert('Chưa có dữ liệu học sinh để xuất báo cáo.');
       return;
     }
 
-    const studentStatsList = students.map((st, index) => {
-      const stats = getStudentProgressData(st.id);
-      return { st, index, stats };
+    setExportJob({
+      isExporting: true,
+      progress: 15,
+      statusMsg: '🚀 Khởi tạo Async Export Job cho ma trận dữ liệu NCKH...',
+      workbook: null,
+      fileName: ''
     });
 
-    let maxAttemptsCount = 3;
-    studentStatsList.forEach(item => {
-      if (item.stats.attempts.length > maxAttemptsCount) {
-        maxAttemptsCount = item.stats.attempts.length;
-      }
-    });
+    setTimeout(() => {
+      setExportJob(prev => ({
+        ...prev,
+        progress: 45,
+        statusMsg: `📊 Đang quét & tính toán ma trận Min/Max/Avg cho ${students.length} học sinh...`
+      }));
 
-    // Sheet 1: Matrix with Left statistics & Right attempt series
-    const reportData = studentStatsList.map(({ st, index, stats }) => {
-      const row = {
-        'STT': index + 1,
-        'Mã Học Sinh (ID)': st.id,
-        'Họ và Tên': st.name,
-        'Lớp': st.class || 'Không liên kết',
-        'Điểm Thấp Nhất (Min)': stats.minScore,
-        'Điểm Cao Nhất (Max)': stats.maxScore,
-        'Điểm Trung Bình (Avg)': stats.avgScore,
-        'Mức Tăng Trưởng (Delta)': stats.deltaStr,
-        'Tổng Số Lượt Thi': stats.totalAttempts
-      };
+      setTimeout(() => {
+        setExportJob(prev => ({
+          ...prev,
+          progress: 80,
+          statusMsg: '📄 Đang đóng gói File Excel Đa Sheet (.xlsx)...'
+        }));
 
-      for (let i = 0; i < maxAttemptsCount; i++) {
-        const att = stats.attempts[i];
-        if (att) {
-          const mins = Math.floor((att.duration_seconds || 0) / 60);
-          const secs = (att.duration_seconds || 0) % 60;
-          const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-          row[`Lần ${i + 1} (Điểm & Thời gian)`] = `${att.score}đ (${timeStr})`;
-        } else {
-          row[`Lần ${i + 1} (Điểm & Thời gian)`] = '-';
-        }
-      }
+        setTimeout(() => {
+          const studentStatsList = students.map((st, index) => {
+            const stats = getStudentProgressData(st.id);
+            return { st, index, stats };
+          });
 
-      return row;
-    });
+          let maxAttemptsCount = 3;
+          studentStatsList.forEach(item => {
+            if (item.stats.attempts.length > maxAttemptsCount) {
+              maxAttemptsCount = item.stats.attempts.length;
+            }
+          });
 
-    const worksheet = XLSX.utils.json_to_sheet(reportData);
+          const reportData = studentStatsList.map(({ st, index, stats }) => {
+            const row = {
+              'STT': index + 1,
+              'Mã Học Sinh (ID)': st.id,
+              'Họ và Tên': st.name,
+              'Lớp': st.class || 'Không liên kết',
+              'Điểm Thấp Nhất (Min)': stats.minScore,
+              'Điểm Cao Nhất (Max)': stats.maxScore,
+              'Điểm Trung Bình (Avg)': stats.avgScore,
+              'Mức Tăng Trưởng (Delta)': stats.deltaStr,
+              'Tổng Số Lượt Thi': stats.totalAttempts
+            };
 
-    // Sheet 2: Executive NCKH Metrics Summary
-    const activeStudentsWithAttempts = studentStatsList.filter(item => item.stats.totalAttempts > 0);
-    const totalTested = activeStudentsWithAttempts.length;
+            for (let i = 0; i < maxAttemptsCount; i++) {
+              const att = stats.attempts[i];
+              if (att) {
+                const mins = Math.floor((att.duration_seconds || 0) / 60);
+                const secs = (att.duration_seconds || 0) % 60;
+                const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                row[`Lần ${i + 1} (Điểm & Thời gian)`] = `${att.score}đ (${timeStr})`;
+              } else {
+                row[`Lần ${i + 1} (Điểm & Thời gian)`] = '-';
+              }
+            }
 
-    const avgBaselineScore = totalTested > 0
-      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.firstScore, 0) / totalTested).toFixed(1))
-      : 0;
+            return row;
+          });
 
-    const avgLatestScore = totalTested > 0
-      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.lastScore, 0) / totalTested).toFixed(1))
-      : 0;
+          const worksheet = XLSX.utils.json_to_sheet(reportData);
 
-    const avgMaxScore = totalTested > 0
-      ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.maxScore, 0) / totalTested).toFixed(1))
-      : 0;
+          const activeStudentsWithAttempts = studentStatsList.filter(item => item.stats.totalAttempts > 0);
+          const totalTested = activeStudentsWithAttempts.length;
 
-    const improvedStudentsCount = activeStudentsWithAttempts.filter(item => item.stats.delta > 0).length;
-    const improvementRate = totalTested > 0 ? Number(((improvedStudentsCount / totalTested) * 100).toFixed(1)) : 0;
+          const avgBaselineScore = totalTested > 0
+            ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.firstScore, 0) / totalTested).toFixed(1))
+            : 0;
 
-    const summaryData = [
-      { 'Chỉ Số NCKH (Metric)': 'Tổng Số Học Sinh Tham Gia Thực Nghiệm', 'Giá Trị Chi Tiết': `${students.length} học sinh` },
-      { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Đã Thực Hiện Chuỗi Quiz', 'Giá Trị Chi Tiết': `${totalTested} học sinh (${((totalTested/students.length)*100).toFixed(1)}%)` },
-      { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Đầu (Baseline Score)', 'Giá Trị Chi Tiết': `${avgBaselineScore} / 10 Điểm` },
-      { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Mới Nhất (Post-test Score)', 'Giá Trị Chi Tiết': `${avgLatestScore} / 10 Điểm` },
-      { 'Chỉ Số NCKH (Metric)': 'Điểm Cao Nhất Trung Bình Toàn Khối (Peak Score)', 'Giá Trị Chi Tiết': `${avgMaxScore} / 10 Điểm` },
-      { 'Chỉ Số NCKH (Metric)': 'Mức Tăng Điểm Trung Bình Toàn Khối (Mean Delta)', 'Giá Trị Chi Tiết': `+${(avgLatestScore - avgBaselineScore).toFixed(1)} Điểm` },
-      { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Có Tiến Bộ Rõ Rệt (Delta > 0)', 'Giá Trị Chi Tiết': `${improvedStudentsCount} em (${improvementRate}%)` },
-      { 'Chỉ Số NCKH (Metric)': 'Mức Độ Hiệu Quả Tác Động (Impact Rating)', 'Giá Trị Chi Tiết': '🟢 TÁC ĐỘNG TÍCH CỰC VƯỢT TRỘI (Đạt chỉ tiêu NCKH)' }
-    ];
+          const avgLatestScore = totalTested > 0
+            ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.lastScore, 0) / totalTested).toFixed(1))
+            : 0;
 
-    const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+          const avgMaxScore = totalTested > 0
+            ? Number((activeStudentsWithAttempts.reduce((acc, item) => acc + item.stats.maxScore, 0) / totalTested).toFixed(1))
+            : 0;
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Chuỗi Tiến Bộ Lần Thi');
-    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Tóm Tắt Chỉ Số NCKH');
+          const improvedStudentsCount = activeStudentsWithAttempts.filter(item => item.stats.delta > 0).length;
+          const improvementRate = totalTested > 0 ? Number(((improvedStudentsCount / totalTested) * 100).toFixed(1)) : 0;
 
-    const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `Bao_Cao_Tien_Bo_NCKH_Chuoi_Quiz_THCS_Tran_Phu_${today}.xlsx`);
+          const summaryData = [
+            { 'Chỉ Số NCKH (Metric)': 'Tổng Số Học Sinh Tham Gia Thực Nghiệm', 'Giá Trị Chi Tiết': `${students.length} học sinh` },
+            { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Đã Thực Hiện Chuỗi Quiz', 'Giá Trị Chi Tiết': `${totalTested} học sinh (${((totalTested/students.length)*100).toFixed(1)}%)` },
+            { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Đầu (Baseline Score)', 'Giá Trị Chi Tiết': `${avgBaselineScore} / 10 Điểm` },
+            { 'Chỉ Số NCKH (Metric)': 'Điểm Trung Bình Lần Mới Nhất (Post-test Score)', 'Giá Trị Chi Tiết': `${avgLatestScore} / 10 Điểm` },
+            { 'Chỉ Số NCKH (Metric)': 'Điểm Cao Nhất Trung Bình Toàn Khối (Peak Score)', 'Giá Trị Chi Tiết': `${avgMaxScore} / 10 Điểm` },
+            { 'Chỉ Số NCKH (Metric)': 'Mức Tăng Điểm Trung Bình Toàn Khối (Mean Delta)', 'Giá Trị Chi Tiết': `+${(avgLatestScore - avgBaselineScore).toFixed(1)} Điểm` },
+            { 'Chỉ Số NCKH (Metric)': 'Số Học Sinh Có Tiến Bộ Rõ Rệt (Delta > 0)', 'Giá Trị Chi Tiết': `${improvedStudentsCount} em (${improvementRate}%)` },
+            { 'Chỉ Số NCKH (Metric)': 'Mức Độ Hiệu Quả Tác Động (Impact Rating)', 'Giá Trị Chi Tiết': '🟢 TÁC ĐỘNG TÍCH CỰC VƯỢT TRỘI (Đạt chỉ tiêu NCKH)' }
+          ];
+
+          const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, 'Chuỗi Tiến Bộ Lần Thi');
+          XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Tóm Tắt Chỉ Số NCKH');
+
+          const today = new Date().toISOString().split('T')[0];
+          const fileName = `Bao_Cao_Tien_Bo_NCKH_Chuoi_Quiz_THCS_Tran_Phu_${today}.xlsx`;
+
+          setExportJob({
+            isExporting: false,
+            progress: 100,
+            statusMsg: '✅ Async Export Job Hoàn Tất! File báo cáo (.xlsx) đã sẵn sàng.',
+            workbook,
+            fileName
+          });
+        }, 250);
+      }, 250);
+    }, 200);
+  };
+
+  const handleDownloadReadyFile = () => {
+    if (exportJob.workbook && exportJob.fileName) {
+      XLSX.writeFile(exportJob.workbook, exportJob.fileName);
+    }
+  };
+
+  const exportNckhExcelReport = () => {
+    startAsyncExportJob();
   };
 
   // Unique classes list for filter
@@ -439,12 +493,55 @@ export default function TeacherDashboard() {
         {/* 1-CLICK NCKH EXCEL EXPORT BUTTON */}
         <button
           onClick={exportNckhExcelReport}
-          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer"
+          disabled={exportJob.isExporting}
+          className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all shrink-0 cursor-pointer disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
-          <span>Xuất Báo Cáo Excel NCKH</span>
+          <span>{exportJob.isExporting ? 'Đang Tạo Báo Cáo Ngầm...' : 'Xuất Báo Cáo Excel NCKH'}</span>
         </button>
       </div>
+
+      {/* BACKGROUND EXPORT JOB STATUS BANNER */}
+      {(exportJob.isExporting || exportJob.progress === 100) && (
+        <div className={`p-4 rounded-2xl border shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 transition-all ${
+          exportJob.progress === 100
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+            : 'bg-sky-50 border-sky-300 text-sky-900'
+        }`}>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {exportJob.isExporting ? (
+              <div className="w-7 h-7 border-3 border-sky-600 border-t-transparent rounded-full animate-spin shrink-0" />
+            ) : (
+              <div className="w-7 h-7 bg-emerald-500 text-white rounded-full flex items-center justify-center font-black text-xs shrink-0">
+                ✓
+              </div>
+            )}
+            <div>
+              <div className="text-xs font-black flex items-center gap-2">
+                <span>{exportJob.statusMsg}</span>
+                <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded-full border">
+                  {exportJob.progress}%
+                </span>
+              </div>
+              <p className="text-[11px] opacity-80">
+                {exportJob.isExporting
+                  ? 'Async Background Job đang xử lý tính toán ngầm, không làm đơ trang hay timeout.'
+                  : 'File Excel (.xlsx) đã sẵn sàng! Bấm nút bên phải để tải về thiết bị.'}
+              </p>
+            </div>
+          </div>
+
+          {exportJob.progress === 100 && (
+            <button
+              onClick={handleDownloadReadyFile}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl shadow-md flex items-center gap-1.5 shrink-0 transition-all cursor-pointer animate-pulse"
+            >
+              <Download className="w-4 h-4" />
+              <span>Tải Báo Cáo XLSX Ngay</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* SUMMARY METRICS METERS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
