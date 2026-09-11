@@ -3,11 +3,26 @@ import { Send, X, Bot, Sparkles, Compass } from 'lucide-react';
 import { askRaccoonAI } from '../../services/aiAssistant';
 import { useActiveTheme } from '../../services/theme';
 
+const renderFormattedText = (text, isUser = false) => {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const content = part.slice(2, -2);
+      if (isUser) {
+        return <strong key={i} className="font-black text-white underline decoration-white/40">{content}</strong>;
+      }
+      return <strong key={i} className="font-extrabold text-sky-900 bg-sky-50/80 px-1 py-0.5 rounded border border-sky-200/80 mx-0.5">{content}</strong>;
+    }
+    return part;
+  });
+};
+
 export default function RaccoonAiModal({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'Xin chào Nhà thám hiểm! Raccoon đây! Bạn có thắc mắc gì về Lịch sử hay Địa lý các tỉnh thành Việt Nam không? Hãy hỏi Raccoon nhé ⭐!'
+      text: 'Xin chào Nhà thám hiểm! Raccoon đây! Bạn có thắc mắc gì về **Lịch sử** hay **Địa lý** các tỉnh thành Việt Nam không? Hãy hỏi Raccoon nhé ⭐!'
     }
   ]);
   const [inputQuestion, setInputQuestion] = useState('');
@@ -90,19 +105,19 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
               )}
 
               <div
-                className={`p-3.5 rounded-2xl max-w-[85%] text-xs font-bold leading-relaxed shadow-sm whitespace-pre-wrap ${
+                className={`p-3.5 rounded-2xl max-w-[85%] text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap ${
                   msg.sender === 'user'
-                    ? 'bg-sky-500 text-white rounded-tr-none'
-                    : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                    ? 'bg-sky-500 text-white rounded-tr-none font-medium'
+                    : 'bg-white text-slate-700 font-normal border border-slate-200/90 rounded-tl-none'
                 }`}
               >
-                {msg.text}
+                {renderFormattedText(msg.text, msg.sender === 'user')}
               </div>
             </div>
           ))}
 
           {loading && (
-            <div className="flex items-center gap-2 text-xs font-extrabold text-sky-600 animate-pulse pl-11">
+            <div className="flex items-center gap-2 text-xs font-semibold text-sky-600 animate-pulse pl-11">
               <Compass className="w-4 h-4 animate-spin" /> Raccoon đang suy nghĩ & tìm câu trả lời...
             </div>
           )}
@@ -122,7 +137,7 @@ export default function RaccoonAiModal({ isOpen, onClose }) {
               }
             }}
             placeholder="Hỏi Raccoon về Lịch Sử hoặc Địa Lý... (Nhấn Enter để gửi, Shift + Enter để xuống dòng)"
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-sky-500 focus:bg-white resize-none leading-relaxed shadow-inner"
+            className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-800 font-normal focus:outline-none focus:border-sky-500 focus:bg-white resize-none leading-relaxed shadow-inner placeholder:font-normal placeholder:text-slate-400"
           />
           <button
             type="submit"
