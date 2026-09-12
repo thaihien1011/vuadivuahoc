@@ -32,7 +32,7 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
       - name: Deploy to Firebase Hosting & Functions
-        uses: w9jds/firebase-action@v13.5.0
+        uses: uses: w9jds/firebase-action@master
         with:
           args: deploy
         env:
