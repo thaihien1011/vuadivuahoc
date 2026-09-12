@@ -17,7 +17,7 @@ import InteractiveMap from '../map/InteractiveMap';
 
 export default function TeacherDashboard() {
   const currentUser = getCurrentAuthUser();
-  const isSuperAdmin = currentUser?.role === 'superadmin';
+  const isSuperAdmin = currentUser?.role === 'superadmin' || currentUser?.uid === 'superadmin_001' || currentUser?.username === 'superadmin';
 
   const [activeTab, setActiveTab] = useState('nckh_report'); // 'nckh_report' | 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
   const [students, setStudents] = useState([]);

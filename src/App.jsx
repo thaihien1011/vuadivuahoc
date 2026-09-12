@@ -33,7 +33,9 @@ export default function App() {
     const user = getCurrentAuthUser();
     setCurrentUser(user);
 
-    if (user && user.role === 'student') {
+    if (user && (user.role === 'teacher' || user.role === 'superadmin')) {
+      setAppPortal('admin');
+    } else if (user && user.role === 'student') {
       const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
       const st = students.find(s => s.id === user.uid);
       if (st && st.must_change_password) {
