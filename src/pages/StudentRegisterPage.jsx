@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, User, Lock, Compass, GraduationCap, CheckCircle2, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { setCurrentAuthUser, syncStudentToFirestore } from '../services/api';
+import { registerStudentAsync } from '../services/api';
 import { useActiveTheme } from '../services/theme';
 import { removeVietnameseTones } from '../utils/textUtils';
 
@@ -13,10 +13,11 @@ export default function StudentRegisterPage({ onRegisterSuccess, onSwitchToLogin
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const { logoUrl } = useActiveTheme();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -25,47 +26,20 @@ export default function StudentRegisterPage({ onRegisterSuccess, onSwitchToLogin
       return;
     }
 
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const existing = students.find(s => s.username === username);
-    if (existing) {
-      setErrorMsg('Tên đăng nhập này đã được sử dụng.');
-      return;
+    setLoading(true);
+    try {
+      await registerStudentAsync({
+        name,
+        username,
+        class: className,
+        gender
+      });
+      onRegisterSuccess('student');
+    } catch (err) {
+      setErrorMsg(err.message || 'Lỗi đăng ký học sinh');
+    } finally {
+      setLoading(false);
     }
-
-    const bodyType = gender === 'female' ? 'body_female' : 'base';
-
-    const newStudent = {
-      id: `st_${Date.now()}`,
-      name: name.trim(),
-      username: username.trim().toLowerCase(),
-      class: className.trim(),
-      gender: gender,
-      body: bodyType,
-      current_star: 0,
-      must_change_password: false,
-      avatar_config: {
-        hair: gender === 'female' ? 'wi_hair_002' : 'wi_hair_001',
-        top: 'wi_top_001',
-        bottom_or_skirt: gender === 'female' ? 'wi_bottom_002' : 'wi_bottom_001',
-        footwear: 'wi_shoes_001'
-      }
-    };
-
-    students.push(newStudent);
-    localStorage.setItem('vdvh_students', JSON.stringify(students));
-
-    setCurrentAuthUser({
-      uid: newStudent.id,
-      role: 'student',
-      username: newStudent.username,
-      name: newStudent.name,
-      gender: newStudent.gender,
-      body: newStudent.body
-    });
-
-    syncStudentToFirestore(newStudent);
-
-    onRegisterSuccess('student');
   };
 
   return (

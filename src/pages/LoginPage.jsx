@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock, Sparkles, Shield, Compass, BookOpen, Eye, EyeOff } from 'lucide-react';
-import { setCurrentAuthUser } from '../services/api';
+import { setCurrentAuthUser, loginStudentAsync } from '../services/api';
 import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function LoginPage({ onLoginSuccess }) {
@@ -8,24 +8,18 @@ export default function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState('nguyenvana');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     if (role === 'student') {
-      const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-      const student = students.find(s => s.username === username || s.id === username);
-      if (!student) {
-        alert('Tài khoản học sinh không tồn tại! Vui lòng sử dụng các tài khoản mẫu bên dưới.');
-        return;
+      try {
+        await loginStudentAsync(username);
+        onLoginSuccess('student');
+      } catch (err) {
+        setErrorMsg(err.message || 'Lỗi đăng nhập học sinh');
       }
-
-      setCurrentAuthUser({
-        uid: student.id,
-        role: 'student',
-        username: student.username,
-        name: student.name
-      });
-      onLoginSuccess('student');
     } else {
       setCurrentAuthUser({
         uid: 'teacher_002',

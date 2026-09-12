@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock, Compass, UserPlus, Eye, EyeOff } from 'lucide-react';
-import { setCurrentAuthUser } from '../services/api';
+import { loginStudentAsync } from '../services/api';
 import { useActiveTheme } from '../services/theme';
 import { removeVietnameseTones } from '../utils/textUtils';
 
@@ -8,30 +8,22 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { logoUrl } = useActiveTheme();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const student = students.find(s => s.username === username || s.id === username);
-    
-    if (!student) {
-      alert('Tài khoản học sinh không tồn tại. Vui lòng kiểm tra lại hoặc Đăng ký.');
-      return;
+    setErrorMsg('');
+    setLoading(true);
+    try {
+      await loginStudentAsync(username);
+      onLoginSuccess('student');
+    } catch (err) {
+      setErrorMsg(err.message || 'Lỗi đăng nhập học sinh');
+    } finally {
+      setLoading(false);
     }
-
-    if (student.is_active === false) {
-      alert('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
-      return;
-    }
-
-    setCurrentAuthUser({
-      uid: student.id,
-      role: 'student',
-      username: student.username,
-      name: student.name
-    });
-    onLoginSuccess('student');
   };
 
   return (
@@ -53,6 +45,12 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
           Lịch sử & Địa Lý
         </p>
       </div>
+
+      {errorMsg && (
+        <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 font-extrabold text-xs rounded-xl text-center">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Student Login Form */}
       <form onSubmit={handleLogin} className="space-y-3.5">

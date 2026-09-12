@@ -14,16 +14,137 @@ export async function syncStudentToFirestore(student) {
       id: student.id,
       name: student.name,
       username: student.username,
-      class_id: student.class_id,
-      class: student.class,
-      gender: student.gender,
+      class_id: student.class_id || student.class || 'Không liên kết',
+      class: student.class || 'Không liên kết',
+      gender: student.gender || 'female',
+      body: student.body || (student.gender === 'female' ? 'body_female' : 'base'),
       current_star: student.current_star || 0,
       must_change_password: student.must_change_password || false,
+      avatar_config: student.avatar_config || {},
       updated_at: new Date().toISOString()
-    });
+    }, { merge: true });
   } catch (err) {
     console.warn('Firestore syncStudentToFirestore error:', err);
   }
+}
+
+export async function loginStudentAsync(inputUsername) {
+  const normUsername = (inputUsername || '').trim().toLowerCase();
+  if (!normUsername) {
+    throw new Error('Vui lòng nhập tên đăng nhập học sinh');
+  }
+  
+  // 1. Check local storage first
+  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
+  let student = localStudents.find(s => 
+    (s.username && s.username.toLowerCase() === normUsername) || 
+    (s.id && s.id.toLowerCase() === normUsername)
+  );
+
+  // 2. Query Cloud Firestore if not found locally
+  if (!student) {
+    try {
+      const q = query(collection(db, 'students'), where('username', '==', normUsername));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        student = querySnap.docs[0].data();
+      } else {
+        const docSnap = await getDoc(doc(db, 'students', normUsername));
+        if (docSnap.exists()) {
+          student = docSnap.data();
+        }
+      }
+    } catch (err) {
+      console.warn('Firestore student login query error:', err);
+    }
+  }
+
+  if (!student) {
+    throw new Error('Tài khoản học sinh không tồn tại. Vui lòng kiểm tra lại hoặc Đăng ký.');
+  }
+
+  if (student.is_active === false) {
+    throw new Error('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
+  }
+
+  // Cache/update student locally
+  const existingIdx = localStudents.findIndex(s => s.id === student.id);
+  if (existingIdx !== -1) {
+    localStudents[existingIdx] = student;
+  } else {
+    localStudents.push(student);
+  }
+  setLocal(STORAGE_KEYS.STUDENTS, localStudents);
+
+  setCurrentAuthUser({
+    uid: student.id,
+    role: 'student',
+    username: student.username,
+    name: student.name,
+    gender: student.gender,
+    body: student.body
+  });
+
+  return student;
+}
+
+export async function registerStudentAsync(studentData) {
+  const normUsername = (studentData.username || '').trim().toLowerCase();
+  if (!normUsername) {
+    throw new Error('Vui lòng nhập tên đăng nhập');
+  }
+
+  // 1. Check Firestore for username collision
+  try {
+    const q = query(collection(db, 'students'), where('username', '==', normUsername));
+    const querySnap = await getDocs(q);
+    if (!querySnap.empty) {
+      throw new Error('Tên đăng nhập này đã được sử dụng trên hệ thống. Vui lòng chọn tên khác.');
+    }
+  } catch (err) {
+    if (err.message.includes('đã được sử dụng')) throw err;
+    console.warn('Firestore register check error:', err);
+  }
+
+  // 2. Check LocalStorage for username collision
+  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
+  if (localStudents.some(s => s.username && s.username.toLowerCase() === normUsername)) {
+    throw new Error('Tên đăng nhập này đã được sử dụng.');
+  }
+
+  const bodyType = studentData.gender === 'female' ? 'body_female' : 'base';
+  const studentObj = {
+    id: `st_${Date.now()}`,
+    name: studentData.name.trim(),
+    username: normUsername,
+    class: studentData.class || 'Không liên kết',
+    gender: studentData.gender || 'female',
+    body: bodyType,
+    current_star: 0,
+    must_change_password: false,
+    avatar_config: {
+      hair: studentData.gender === 'female' ? 'wi_hair_002' : 'wi_hair_001',
+      top: 'wi_top_001',
+      bottom_or_skirt: studentData.gender === 'female' ? 'wi_bottom_002' : 'wi_bottom_001',
+      footwear: 'wi_shoes_001'
+    },
+    created_at: new Date().toISOString()
+  };
+
+  localStudents.push(studentObj);
+  setLocal(STORAGE_KEYS.STUDENTS, localStudents);
+
+  setCurrentAuthUser({
+    uid: studentObj.id,
+    role: 'student',
+    username: studentObj.username,
+    name: studentObj.name,
+    gender: studentObj.gender,
+    body: studentObj.body
+  });
+
+  await syncStudentToFirestore(studentObj);
+  return studentObj;
 }
 
 export async function syncTeacherToFirestore(teacher) {
