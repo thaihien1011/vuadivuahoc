@@ -45,7 +45,7 @@ export const INITIAL_STUDENTS = [
     class: 'Lớp 8/8',
     gender: 'female',
     body: 'body_female',
-    current_star: 50,
+    current_star: 35,
     must_change_password: false,
     avatar_config: {
       hair: 'wi_hair_002',
@@ -69,40 +69,6 @@ export const INITIAL_STUDENTS = [
       top: 'wi_top_001',
       bottom_or_skirt: 'wi_bottom_001',
       footwear: 'wi_shoes_001'
-    }
-  },
-  {
-    id: 'st_hs001',
-    username: 'nguyenvana',
-    name: 'Nguyễn Văn A',
-    class_id: 'class_88',
-    class: 'Lớp 8/8',
-    gender: 'female',
-    body: 'body_female',
-    current_star: 15,
-    must_change_password: false,
-    avatar_config: {
-      hair: 'wi_hair_002',
-      top: 'wi_top_001',
-      bottom_or_skirt: 'wi_bottom_002',
-      footwear: 'wi_shoes_001'
-    }
-  },
-  {
-    id: 'st_hs002',
-    username: 'trannam8a1',
-    name: 'Trần Nam',
-    class_id: 'class_88',
-    class: 'Lớp 8/8',
-    gender: 'male',
-    body: 'base',
-    current_star: 8,
-    must_change_password: false,
-    avatar_config: {
-      hair: 'wi_hair_003',
-      top: 'wi_top_003',
-      bottom_or_skirt: 'wi_bottom_003',
-      footwear: 'wi_shoes_002'
     }
   }
 ];

@@ -5,7 +5,7 @@ import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [role, setRole] = useState('student'); // 'student' | 'teacher'
-  const [username, setUsername] = useState('nguyenvana');
+  const [username, setUsername] = useState('nguyentramy');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -62,7 +62,7 @@ export default function LoginPage({ onLoginSuccess }) {
         <div className="grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
           <button
             type="button"
-            onClick={() => { setRole('student'); setUsername('nguyenvana'); }}
+            onClick={() => { setRole('student'); setUsername('nguyentramy'); }}
             className={`py-2.5 text-xs font-black rounded-xl transition-all ${
               role === 'student'
                 ? 'bg-emerald-500 text-white shadow-sm border-b-2 border-emerald-700'
@@ -97,7 +97,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 type="text"
                 value={username}
                 onChange={e => setUsername(removeVietnameseTones(e.target.value).toLowerCase())}
-                placeholder="VD: nguyenvana"
+                placeholder="VD: nguyentramy"
                 className="w-full bg-gray-50 border-2 border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 font-mono font-bold"
                 required
               />
@@ -140,32 +140,26 @@ export default function LoginPage({ onLoginSuccess }) {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => handleQuickStudentLogin('st_nth001', 'Nguyen Thai Hien', 'nguyenthaihien')}
-              className="p-3 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-left hover:bg-emerald-100 transition-colors col-span-2"
+              onClick={() => handleQuickStudentLogin('st_ntm001', 'Nguyễn Trà My', 'nguyentramy')}
+              className="p-3 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-left hover:bg-emerald-100 transition-colors"
             >
               <div className="text-xs font-black text-emerald-900 flex items-center justify-between">
-                <span>👦 Nguyen Thai Hien (Test User)</span>
-                <span className="text-[10px] text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md font-bold">nguyenthaihien</span>
+                <span>👧 Nguyễn Trà My</span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-200/60 px-1.5 py-0.5 rounded font-bold">Lớp 8/8</span>
               </div>
-              <div className="text-[10px] text-slate-600 font-bold">Không liên kết • Mật khẩu: pass123</div>
+              <div className="text-[10px] text-slate-600 font-bold">nguyentramy</div>
             </button>
 
             <button
               type="button"
-              onClick={() => handleQuickStudentLogin('st_hs001', 'Nguyễn Văn A', 'nguyenvana')}
-              className="p-2.5 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
+              onClick={() => handleQuickStudentLogin('st_nth001', 'Nguyen Thai Hien', 'nguyenthaihien')}
+              className="p-3 bg-sky-50 border-2 border-sky-300 rounded-2xl text-left hover:bg-sky-100 transition-colors"
             >
-              <div className="text-xs font-black text-sky-800">Nguyễn Văn A</div>
-              <div className="text-[10px] text-slate-500 font-bold">Lớp 8/8 (15 Stars)</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickStudentLogin('st_hs002', 'Trần Nam', 'trannam8a1')}
-              className="p-2.5 bg-sky-50 border-2 border-sky-200 rounded-2xl text-left hover:bg-sky-100 transition-colors"
-            >
-              <div className="text-xs font-black text-sky-800">Trần Nam</div>
-              <div className="text-[10px] text-slate-500 font-bold">Lớp 8/8 (8 Stars)</div>
+              <div className="text-xs font-black text-sky-900 flex items-center justify-between">
+                <span>👦 Thai Hien</span>
+                <span className="text-[10px] text-sky-700 bg-sky-200/60 px-1.5 py-0.5 rounded font-bold">Test</span>
+              </div>
+              <div className="text-[10px] text-slate-600 font-bold">nguyenthaihien</div>
             </button>
           </div>
         </div>

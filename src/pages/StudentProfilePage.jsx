@@ -5,8 +5,8 @@ import { THEMES, getCurrentTheme, applyTheme } from '../services/theme';
 import { syncStudentToFirestore } from '../services/api';
 
 export default function StudentProfilePage({ studentData, onUpdateStudent, onLogout }) {
-  const [name, setName] = useState(studentData?.name || 'Nguyễn Văn A');
-  const [className, setClassName] = useState(studentData?.class || 'Lớp 8A1');
+  const [name, setName] = useState(studentData?.name || 'Nguyễn Trà My');
+  const [className, setClassName] = useState(studentData?.class || 'Lớp 8/8');
   const [gender, setGender] = useState(studentData?.gender || 'female');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [activeTheme, setActiveTheme] = useState(getCurrentTheme());
@@ -46,9 +46,9 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
       localStorage.setItem('vdvh_students', JSON.stringify(students));
     } else {
       updatedStudentObj = {
-        id: studentData?.id || 'st_hs001',
+        id: studentData?.id || 'st_ntm001',
         name: name.trim(),
-        username: studentData?.username || 'nguyenvana',
+        username: studentData?.username || 'nguyentramy',
         class: className.trim(),
         gender: gender,
         body: bodyType,
@@ -58,7 +58,7 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
     }
 
     const currentAuth = JSON.parse(localStorage.getItem('vdvh_current_auth_user') || '{}');
-    if (currentAuth.uid === (studentData?.id || 'st_hs001')) {
+    if (currentAuth.uid === (studentData?.id || 'st_ntm001')) {
       currentAuth.name = name.trim();
       currentAuth.gender = gender;
       currentAuth.body = bodyType;
