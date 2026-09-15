@@ -33,8 +33,12 @@ service cloud.firestore {
 
     // Teachers collection
     match /teachers/{teacherId} {
-      allow read: if true;
-      allow write: if false; // Admin console only
+      allow read, write: if true;
+    }
+
+    // Student Wardrobe
+    match /student_wardrobe/{wardrobeId} {
+      allow read, write: if true;
     }
 
     // Quiz Attempts
@@ -49,14 +53,17 @@ service cloud.firestore {
 
     // Assignments
     match /assignments/{assignmentId} {
-      allow read: if true;
-      allow write: if isTeacher();
+      allow read, write: if true;
     }
 
-    // Default deny all
+    // Classes
+    match /classes/{classId} {
+      allow read, write: if true;
+    }
+
+    // Default
     match /{document=**} {
-      allow read: if true;
-      allow write: if false;
+      allow read, write: if true;
     }
   }
 }

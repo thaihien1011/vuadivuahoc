@@ -16,17 +16,27 @@ export default function App() {
 
   useEffect(() => {
     // 1. Detect subdomain or path or hash for Admin vs Student Portal
-    const host = window.location.hostname;
-    const path = window.location.pathname;
-    const hash = window.location.hash;
+    const updatePortal = () => {
+      const host = window.location.hostname;
+      const path = window.location.pathname;
+      const hash = window.location.hash;
 
-    if (host.startsWith('admin.') || path.startsWith('/admin') || hash === '#admin') {
-      setAppPortal('admin');
-    } else {
-      setAppPortal('student');
-    }
+      if (host.startsWith('admin.') || path.startsWith('/admin') || hash === '#admin' || hash.startsWith('#admin')) {
+        setAppPortal('admin');
+      } else {
+        setAppPortal('student');
+      }
+      checkAuth();
+    };
 
-    checkAuth();
+    updatePortal();
+    window.addEventListener('hashchange', updatePortal);
+    window.addEventListener('popstate', updatePortal);
+
+    return () => {
+      window.removeEventListener('hashchange', updatePortal);
+      window.removeEventListener('popstate', updatePortal);
+    };
   }, []);
 
   const checkAuth = async () => {
