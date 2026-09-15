@@ -526,6 +526,9 @@ export async function saveScore(attempt_id) {
     setLocal(STORAGE_KEYS.LOCKED_SCORES, lockedScores);
     setLocal(STORAGE_KEYS.STUDENTS, students);
     setLocal(STORAGE_KEYS.STAR_TRANSACTIONS, transactions);
+    if (student) {
+      syncStudentToFirestore(student);
+    }
   }
 
   const questionPool = attempt.questions_pool || [];
