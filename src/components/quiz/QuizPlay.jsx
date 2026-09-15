@@ -90,8 +90,20 @@ export default function QuizPlay({ lessonId, onBackToMap, onScoreSaved }) {
     try {
       setIsTimerRunning(false);
       const res = await submitQuiz(quizData.attempt_id, userAnswers, timerSeconds);
+      const saveRes = await saveScore(quizData.attempt_id);
       setSubmitResult(res);
+      setSaveResult(saveRes);
       setShowResultModal(true);
+
+      if (saveRes && saveRes.star_earned > 0) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      if (onScoreSaved) onScoreSaved();
     } catch (err) {
       setWarningModal({
         isOpen: true,
