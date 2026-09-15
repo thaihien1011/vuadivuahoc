@@ -346,7 +346,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2.2_firestore_strict';
+const CURRENT_DATA_VERSION = 'v2.3_clean_slate';
 
 // LocalStorage Helper
 function getLocal(key, defaultValue = []) {
