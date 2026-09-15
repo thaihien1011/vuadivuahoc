@@ -5,7 +5,7 @@ import TeacherLoginPage from './pages/TeacherLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import TeacherDashboard from './components/admin/TeacherDashboard';
 import MustChangePasswordPage from './pages/MustChangePasswordPage';
-import { getCurrentAuthUser, setCurrentAuthUser } from './services/api';
+import { getCurrentAuthUser, setCurrentAuthUser, getLiveStudent } from './services/api';
 import { LogOut, ShieldCheck, UserCheck, ExternalLink } from 'lucide-react';
 
 export default function App() {
@@ -29,20 +29,28 @@ export default function App() {
     checkAuth();
   }, []);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     const user = getCurrentAuthUser();
-    setCurrentUser(user);
 
     if (user && (user.role === 'teacher' || user.role === 'superadmin')) {
+      setCurrentUser(user);
       setAppPortal('admin');
     } else if (user && user.role === 'student') {
-      const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-      const st = students.find(s => s.id === user.uid);
-      if (st && st.must_change_password) {
+      const liveStudent = await getLiveStudent(user.uid);
+      if (!liveStudent) {
+        // Student was deleted on Firestore -> auto logout to show clean Login/Register!
+        setCurrentAuthUser(null);
+        setCurrentUser(null);
+        return;
+      }
+      setCurrentUser(user);
+      if (liveStudent.must_change_password) {
         setMustChangePassword(true);
       } else {
         setMustChangePassword(false);
       }
+    } else {
+      setCurrentUser(null);
     }
   };
 
@@ -54,6 +62,7 @@ export default function App() {
     setCurrentAuthUser(null);
     setCurrentUser(null);
   };
+
 
   const switchPortal = (portal) => {
     setAppPortal(portal);
