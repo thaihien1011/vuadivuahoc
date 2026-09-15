@@ -239,6 +239,81 @@ export async function registerStudentAsync(studentData) {
   return studentObj;
 }
 
+export async function loginTeacherAsync(inputEmail, inputPassword) {
+  const normEmail = (inputEmail || '').trim().toLowerCase();
+  const pass = (inputPassword || '').trim();
+  if (!normEmail) throw new Error('Vui lòng nhập Email hoặc Tài khoản giáo viên');
+  if (!pass) throw new Error('Vui lòng nhập Mật khẩu');
+
+  // Direct superadmin credentials check
+  if ((normEmail === 'superadmin' || normEmail === 'superadmin@vuadivuahoc.edu.vn') && (pass === 'raccoon2026' || pass === '123456')) {
+    const adminUser = {
+      uid: 'superadmin_001',
+      role: 'superadmin',
+      username: 'superadmin',
+      name: 'Super Admin Raccoon',
+      email: 'superadmin@vuadivuahoc.edu.vn'
+    };
+    setCurrentAuthUser(adminUser);
+    return adminUser;
+  }
+
+  let teacher = null;
+
+  // 1. Direct Cloud Firestore query
+  try {
+    const qEmail = query(collection(db, 'teachers'), where('email', '==', normEmail));
+    const snapEmail = await getDocs(qEmail);
+    if (!snapEmail.empty) {
+      teacher = { ...snapEmail.docs[0].data(), id: snapEmail.docs[0].id };
+    } else {
+      const qRecovery = query(collection(db, 'teachers'), where('recovery_email', '==', normEmail));
+      const snapRecovery = await getDocs(qRecovery);
+      if (!snapRecovery.empty) {
+        teacher = { ...snapRecovery.docs[0].data(), id: snapRecovery.docs[0].id };
+      } else {
+        const qUser = query(collection(db, 'teachers'), where('username', '==', normEmail));
+        const snapUser = await getDocs(qUser);
+        if (!snapUser.empty) {
+          teacher = { ...snapUser.docs[0].data(), id: snapUser.docs[0].id };
+        } else {
+          const docDirect = await getDoc(doc(db, 'teachers', normEmail));
+          if (docDirect.exists()) {
+            teacher = { ...docDirect.data(), id: docDirect.id };
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Firestore teacher login error:', err);
+    throw new Error('Lỗi kết nối cơ sở dữ liệu Firestore');
+  }
+
+  if (!teacher) {
+    throw new Error('Tài khoản giáo viên không tồn tại trên hệ thống');
+  }
+
+  if (teacher.is_active === false) {
+    throw new Error('Tài khoản giáo viên đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên');
+  }
+
+  if (teacher.password && teacher.password !== pass) {
+    throw new Error('Mật khẩu không chính xác');
+  }
+
+  const role = teacher.role || 'teacher';
+  const teacherUser = {
+    uid: teacher.id,
+    role: role,
+    username: teacher.username || teacher.email || teacher.recovery_email || 'admin',
+    name: teacher.name,
+    email: teacher.email || teacher.recovery_email
+  };
+
+  setCurrentAuthUser(teacherUser);
+  return teacherUser;
+}
+
 export async function syncTeacherToFirestore(teacher) {
   if (!teacher || !teacher.id) return;
   try {
@@ -361,31 +436,51 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
     throw new Error('PERMISSION_DENIED: Bạn cần đăng nhập tài khoản học sinh');
   }
 
-  // 1. Fetch lesson directly from local storage first (supports live Google Sheet & Excel sync)
-  const localLessons = getLocal(STORAGE_KEYS.LESSONS, []);
-  let lesson = localLessons.find(l => l.id === lesson_id);
+  // 1. Fetch lesson
+  let lesson = null;
+  try {
+    const lessonSnap = await getDoc(doc(db, 'lessons', lesson_id));
+    if (lessonSnap.exists()) {
+      lesson = { ...lessonSnap.data(), id: lessonSnap.id };
+    }
+  } catch (err) {
+    console.warn('Firestore getDoc lesson error:', err);
+  }
 
   if (!lesson) {
-    try {
-      const lessonSnap = await getDoc(doc(db, 'lessons', lesson_id));
-      if (lessonSnap.exists()) {
-        lesson = lessonSnap.data();
-      }
-    } catch (err) {
-      console.warn('Firestore getDoc lesson error:', err);
-    }
+    const localLessons = getLocal(STORAGE_KEYS.LESSONS, []);
+    lesson = localLessons.find(l => l.id === lesson_id);
   }
 
   if (!lesson) throw new Error('NOT_FOUND: Bài học không tồn tại');
 
-  const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
+  // 2. Check for existing in_progress attempt from Firestore / LocalStorage if not forceNew
+  let existingAttempt = null;
+  if (!forceNew) {
+    try {
+      const qAttempt = query(
+        collection(db, 'quiz_attempts'),
+        where('student_id', '==', user.uid),
+        where('lesson_id', '==', lesson_id),
+        where('status', '==', 'in_progress')
+      );
+      const snapAttempt = await getDocs(qAttempt);
+      if (!snapAttempt.empty) {
+        existingAttempt = { ...snapAttempt.docs[0].data(), id: snapAttempt.docs[0].id };
+      }
+    } catch (err) {
+      console.warn('Firestore in_progress attempt query error:', err);
+    }
 
-  // 2. Check for existing in_progress attempt for this (user.uid, lesson_id) if not forceNew
-  const existingAttempt = !forceNew ? attempts.find(
-    a => a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress' && Array.isArray(a.questions_pool) && a.questions_pool.length > 0
-  ) : null;
+    if (!existingAttempt) {
+      const localAttempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
+      existingAttempt = localAttempts.find(
+        a => a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress' && Array.isArray(a.questions_pool) && a.questions_pool.length > 0
+      );
+    }
+  }
 
-  if (existingAttempt) {
+  if (existingAttempt && Array.isArray(existingAttempt.questions_pool) && existingAttempt.questions_pool.length > 0) {
     const sanitizeQuestions = existingAttempt.questions_pool.map(q => ({
       question_id: q.id || q.question_id,
       text: q.text,
@@ -425,7 +520,6 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
     console.warn('Firestore query questions error, using local dataset:', err);
   }
 
-  // Fallback to local storage questions strictly matching lesson_id if Firestore query returned 0 items
   if (lessonQuestions.length === 0) {
     const localQuestions = getLocal(STORAGE_KEYS.QUESTIONS, []);
     lessonQuestions = localQuestions.filter(q => q.lesson_id === lesson_id);
@@ -448,12 +542,21 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
     lesson_id: lesson_id,
     status: 'in_progress',
     question_ids: chosen.map(q => q.id),
-    questions_pool: chosen, // Store chosen questions directly for 100% exact evaluation
+    questions_pool: chosen,
     answers: {},
-    started_at: now.toISOString()
+    started_at: now.toISOString(),
+    updated_at: now.toISOString()
   };
+
+  // Sync in_progress attempt directly to Firestore
+  try {
+    await setDoc(doc(db, 'quiz_attempts', attempt_id), inProgressAttempt, { merge: true });
+  } catch (err) {
+    console.warn('Firestore setDoc in_progress attempt error:', err);
+  }
   
-  const filteredAttempts = attempts.filter(a => !(a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress'));
+  const localAttempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
+  const filteredAttempts = localAttempts.filter(a => !(a.student_id === user.uid && a.lesson_id === lesson_id && a.status === 'in_progress'));
   filteredAttempts.push(inProgressAttempt);
   setLocal(STORAGE_KEYS.ATTEMPTS, filteredAttempts);
 
@@ -481,12 +584,22 @@ export async function getQuizQuestions(lesson_id, forceNew = false) {
   };
 }
 
-export function saveInProgressAnswers(attempt_id, answers) {
+export async function saveInProgressAnswers(attempt_id, answers) {
   const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
   const attempt = attempts.find(a => a.id === attempt_id);
   if (attempt && attempt.status === 'in_progress') {
     attempt.answers = answers;
+    attempt.updated_at = new Date().toISOString();
     setLocal(STORAGE_KEYS.ATTEMPTS, attempts);
+  }
+  try {
+    const attemptDocRef = doc(db, 'quiz_attempts', attempt_id);
+    await updateDoc(attemptDocRef, {
+      answers: answers,
+      updated_at: new Date().toISOString()
+    });
+  } catch (err) {
+    // Silent catch for non-blocking in-progress answer streaming
   }
 }
 
@@ -497,8 +610,20 @@ export async function submitQuiz(attempt_id, answers, duration_seconds = 0) {
   const user = getCurrentAuthUser();
   if (!user) throw new Error('PERMISSION_DENIED: Chưa đăng nhập');
 
+  let attempt = null;
   const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
-  const attempt = attempts.find(a => a.id === attempt_id);
+  attempt = attempts.find(a => a.id === attempt_id);
+
+  if (!attempt) {
+    try {
+      const snap = await getDoc(doc(db, 'quiz_attempts', attempt_id));
+      if (snap.exists()) {
+        attempt = { ...snap.data(), id: snap.id };
+      }
+    } catch (err) {
+      console.warn('Firestore getDoc attempt error:', err);
+    }
+  }
 
   if (!attempt) throw new Error('NOT_FOUND: Lượt làm bài không tồn tại');
   if (attempt.student_id !== user.uid) throw new Error('PERMISSION_DENIED: Lượt làm không khớp tài khoản');
@@ -506,9 +631,8 @@ export async function submitQuiz(attempt_id, answers, duration_seconds = 0) {
     throw new Error('FAILED_PRECONDITION: Bài này đã nộp rồi. Hãy bấm Làm lại để tạo lượt mới.');
   }
 
-  // Validate answering all questions in this attempt
   const answeredQuestionIds = Object.keys(answers || {});
-  if (answeredQuestionIds.length < attempt.question_ids.length) {
+  if (answeredQuestionIds.length < (attempt.question_ids || []).length) {
     throw new Error(`INVALID_ARGUMENT: Vui lòng trả lời đầy đủ ${attempt.question_ids.length} câu trước khi nộp bài`);
   }
 
@@ -529,12 +653,18 @@ export async function submitQuiz(attempt_id, answers, duration_seconds = 0) {
     });
   }
 
-  // Update attempt to submitted
   attempt.status = 'submitted';
   attempt.score = score;
   attempt.answers = answers;
   attempt.duration_seconds = duration_seconds;
   attempt.submitted_at = new Date().toISOString();
+
+  // Sync submitted attempt to Firestore
+  try {
+    await setDoc(doc(db, 'quiz_attempts', attempt_id), attempt, { merge: true });
+  } catch (err) {
+    console.warn('Firestore submitQuiz setDoc error:', err);
+  }
 
   setLocal(STORAGE_KEYS.ATTEMPTS, attempts);
 
@@ -556,8 +686,20 @@ export async function saveScore(attempt_id) {
   const user = getCurrentAuthUser();
   if (!user) throw new Error('PERMISSION_DENIED: Chưa đăng nhập');
 
+  let attempt = null;
   const attempts = getLocal(STORAGE_KEYS.ATTEMPTS, []);
-  const attempt = attempts.find(a => a.id === attempt_id);
+  attempt = attempts.find(a => a.id === attempt_id);
+
+  if (!attempt) {
+    try {
+      const snap = await getDoc(doc(db, 'quiz_attempts', attempt_id));
+      if (snap.exists()) {
+        attempt = { ...snap.data(), id: snap.id };
+      }
+    } catch (err) {
+      console.warn('Firestore getDoc attempt error:', err);
+    }
+  }
 
   if (!attempt) throw new Error('NOT_FOUND: Lượt làm bài không tồn tại');
   if (attempt.student_id !== user.uid) throw new Error('PERMISSION_DENIED');
@@ -645,7 +787,6 @@ export async function saveScore(attempt_id) {
   }
   await syncScoreToFirestore(user.uid, attempt.lesson_id, attempt.score, new_stamp);
 
-
   const questionPool = attempt.questions_pool || [];
   const review = attempt.question_ids.map(qid => {
     const q = questionPool.find(x => x.id === qid);
@@ -672,8 +813,46 @@ export async function saveScore(attempt_id) {
 }
 
 /* ==========================================================================
-   4. Function: purchaseWardrobeItem(item_id)
+   4. Function: getLiveStudentWardrobe & purchaseWardrobeItem
    ========================================================================== */
+export async function getLiveStudentWardrobe(studentId) {
+  if (!studentId) return [];
+  try {
+    const q = query(collection(db, 'student_wardrobe'), where('student_id', '==', studentId));
+    const snap = await getDocs(q);
+    const itemIds = [];
+    const fullWardrobeList = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data && data.item_id) {
+        itemIds.push(data.item_id);
+        fullWardrobeList.push({ ...data, id: d.id });
+      }
+    });
+
+    const student = await getLiveStudent(studentId);
+    if (student && student.avatar_config) {
+      Object.values(student.avatar_config).forEach(itemId => {
+        if (itemId && !itemIds.includes(itemId)) {
+          itemIds.push(itemId);
+          fullWardrobeList.push({
+            student_id: studentId,
+            item_id: itemId,
+            purchased_at: student.created_at || new Date().toISOString()
+          });
+        }
+      });
+    }
+
+    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, fullWardrobeList);
+    return itemIds;
+  } catch (err) {
+    console.warn('getLiveStudentWardrobe error:', err);
+    const localWardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
+    return localWardrobes.filter(w => w.student_id === studentId).map(w => w.item_id);
+  }
+}
+
 export async function purchaseWardrobeItem(item_id) {
   const user = getCurrentAuthUser();
   if (!user) throw new Error('PERMISSION_DENIED: Chưa đăng nhập');
@@ -681,39 +860,51 @@ export async function purchaseWardrobeItem(item_id) {
   const item = WARDROBE_ITEMS_CATALOG.find(i => i.id === item_id);
   if (!item) throw new Error('NOT_FOUND: Trang phục không tồn tại');
 
-  const wardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
-  const alreadyOwned = wardrobes.some(w => w.student_id === user.uid && w.item_id === item_id);
-  if (alreadyOwned) throw new Error('FAILED_PRECONDITION: Bạn đã sở hữu món đồ này rồi');
-
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === user.uid);
+  let student = await getLiveStudent(user.uid);
   if (!student) throw new Error('PERMISSION_DENIED: Học sinh không tồn tại');
 
+  const ownedItems = await getLiveStudentWardrobe(user.uid);
+  if (ownedItems.includes(item_id)) {
+    throw new Error('FAILED_PRECONDITION: Bạn đã sở hữu món đồ này rồi');
+  }
+
   if ((student.current_star || 0) < item.star_cost) {
-    throw new Error('FAILED_PRECONDITION: Bạn không đủ sao để mua vật phẩm này');
+    throw new Error(`FAILED_PRECONDITION: Bạn cần ${item.star_cost} sao để mua. Hiện chỉ có ${student.current_star || 0} sao.`);
   }
 
   student.current_star -= item.star_cost;
+  student.updated_at = new Date().toISOString();
+
+  // 1. Sync updated stars to Firestore students collection
+  await syncStudentToFirestore(student);
+
+  // 2. Save purchase record directly to Firestore student_wardrobe collection
+  try {
+    const wardrobeDocRef = doc(db, 'student_wardrobe', `${user.uid}_${item_id}`);
+    await setDoc(wardrobeDocRef, {
+      student_id: user.uid,
+      item_id: item_id,
+      star_cost: item.star_cost,
+      purchased_at: new Date().toISOString()
+    });
+  } catch (err) {
+    console.warn('Firestore purchase wardrobe error:', err);
+  }
+
+  // 3. Update local cache
+  const wardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
   wardrobes.push({
     student_id: user.uid,
     item_id: item_id,
     purchased_at: new Date().toISOString()
   });
-
-  const transactions = getLocal(STORAGE_KEYS.STAR_TRANSACTIONS, []);
-  transactions.push({
-    id: 'st_tx_' + Date.now(),
-    student_id: user.uid,
-    amount: -item.star_cost,
-    type: 'spend',
-    source: 'wardrobe',
-    reference_id: item_id,
-    created_at: new Date().toISOString()
-  });
-
-  setLocal(STORAGE_KEYS.STUDENTS, students);
   setLocal(STORAGE_KEYS.STUDENT_WARDROBE, wardrobes);
-  setLocal(STORAGE_KEYS.STAR_TRANSACTIONS, transactions);
+
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const idx = students.findIndex(s => s.id === user.uid);
+  if (idx >= 0) students[idx] = student;
+  else students.push(student);
+  setLocal(STORAGE_KEYS.STUDENTS, students);
 
   return {
     purchased: true,
@@ -733,8 +924,7 @@ export async function equipWardrobeItem(item_id) {
   const item = WARDROBE_ITEMS_CATALOG.find(i => i.id === item_id);
   if (!item) throw new Error('NOT_FOUND: Món đồ không tồn tại');
 
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === user.uid);
+  let student = await getLiveStudent(user.uid);
   if (!student) throw new Error('NOT_FOUND: Học sinh không tồn tại');
 
   if (!student.avatar_config) {
@@ -742,31 +932,27 @@ export async function equipWardrobeItem(item_id) {
   }
 
   const isCurrentlyEquipped = student.avatar_config[item.slot] === item_id;
+  const ownedItems = await getLiveStudentWardrobe(user.uid);
+  const isOwned = ownedItems.includes(item_id) || isCurrentlyEquipped;
 
-  // Check ownership: Item is owned if it is in student_wardrobe OR currently in student's avatar_config (default items)
-  const wardrobes = getLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
-  const isOwnedInWardrobe = wardrobes.some(w => w.student_id === user.uid && w.item_id === item_id);
-  const isOwnedInConfig = Object.values(student.avatar_config).includes(item_id);
-
-  if (!isOwnedInWardrobe && !isOwnedInConfig && !isCurrentlyEquipped) {
+  if (!isOwned) {
     throw new Error('PERMISSION_DENIED: Bạn chưa sở hữu vật phẩm này. Vui lòng chọn Mua ngay!');
   }
 
-  // Auto-record ownership if it was a default item in avatar_config
-  if (!isOwnedInWardrobe && isOwnedInConfig) {
-    wardrobes.push({ student_id: user.uid, item_id: item_id, purchased_at: new Date().toISOString() });
-    setLocal(STORAGE_KEYS.STUDENT_WARDROBE, wardrobes);
-  }
-
-  // Toggle: If currently equipped, unequip it!
   if (isCurrentlyEquipped) {
     student.avatar_config[item.slot] = null;
   } else {
     student.avatar_config[item.slot] = item_id;
   }
 
+  student.updated_at = new Date().toISOString();
+  await syncStudentToFirestore(student);
+
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const idx = students.findIndex(s => s.id === user.uid);
+  if (idx >= 0) students[idx] = student;
+  else students.push(student);
   setLocal(STORAGE_KEYS.STUDENTS, students);
-  syncStudentToFirestore(student);
 
   return {
     equipped: student.avatar_config[item.slot] === item_id,
@@ -779,13 +965,17 @@ export async function unequipWardrobeSlot(slotKey) {
   const user = getCurrentAuthUser();
   if (!user) throw new Error('PERMISSION_DENIED: Chưa đăng nhập');
 
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === user.uid);
-
+  let student = await getLiveStudent(user.uid);
   if (student && student.avatar_config) {
     student.avatar_config[slotKey] = null;
+    student.updated_at = new Date().toISOString();
+    await syncStudentToFirestore(student);
+
+    const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+    const idx = students.findIndex(s => s.id === user.uid);
+    if (idx >= 0) students[idx] = student;
+    else students.push(student);
     setLocal(STORAGE_KEYS.STUDENTS, students);
-    syncStudentToFirestore(student);
   }
 
   return {

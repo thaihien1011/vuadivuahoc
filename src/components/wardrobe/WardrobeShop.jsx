@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shirt, Star, Scissors, Footprints, Check, RotateCcw, Sparkles, X, User } from 'lucide-react';
 import AvatarCanvas from '../avatar/AvatarCanvas';
 import { WARDROBE_ITEMS_CATALOG, WARDROBE_SLOTS } from '../../config/constants';
-import { purchaseWardrobeItem, equipWardrobeItem, unequipWardrobeSlot, getCurrentAuthUser } from '../../services/api';
+import { purchaseWardrobeItem, equipWardrobeItem, unequipWardrobeSlot, getLiveStudentWardrobe, getCurrentAuthUser } from '../../services/api';
 
 export default function WardrobeShop({ studentData, onUpdateStudent }) {
   const [activeSlotFilter, setActiveSlotFilter] = useState('all');
@@ -21,13 +21,13 @@ export default function WardrobeShop({ studentData, onUpdateStudent }) {
     // Scroll to top on mount
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    // Load owned items from localStorage
-    const savedWardrobes = JSON.parse(localStorage.getItem('vdvh_student_wardrobe') || '[]');
-    const studentOwned = savedWardrobes
-      .filter(w => w.student_id === currentUserId)
-      .map(w => w.item_id);
-
-    setOwnedItemIds(studentOwned);
+    async function loadOwnedItems() {
+      if (currentUserId) {
+        const liveOwned = await getLiveStudentWardrobe(currentUserId);
+        setOwnedItemIds(liveOwned);
+      }
+    }
+    loadOwnedItems();
   }, [currentUserId, studentData]);
 
   const handleBuyItem = async (item) => {
@@ -39,7 +39,8 @@ export default function WardrobeShop({ studentData, onUpdateStudent }) {
     try {
       setLoadingAction(item.id);
       await purchaseWardrobeItem(item.id);
-      setOwnedItemIds(prev => [...prev, item.id]);
+      const liveOwned = await getLiveStudentWardrobe(currentUserId);
+      setOwnedItemIds(liveOwned);
       if (onUpdateStudent) onUpdateStudent();
     } catch (err) {
       alert(err.message || 'Lỗi mua đồ');

@@ -1,66 +1,26 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock, ShieldCheck, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { setCurrentAuthUser, getTeachersTable } from '../services/api';
+import { loginTeacherAsync } from '../services/api';
 import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function TeacherLoginPage({ onLoginSuccess }) {
-  const [email, setEmail] = useState('thunga.130992@gmail.com');
-  const [password, setPassword] = useState('thunga0992');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    const inputEmail = email.trim().toLowerCase();
-    const inputPass = password.trim();
-
-    // Check direct superadmin credentials
-    if ((inputEmail === 'superadmin' || inputEmail === 'superadmin@vuadivuahoc.edu.vn') && inputPass === 'raccoon2026') {
-      setCurrentAuthUser({
-        uid: 'superadmin_001',
-        role: 'superadmin',
-        username: 'superadmin',
-        name: 'Super Admin Raccoon',
-        email: 'superadmin@vuadivuahoc.edu.vn'
-      });
-      onLoginSuccess('superadmin');
-      return;
-    }
-
-    const allTeachers = getTeachersTable();
-
-    const teacher = allTeachers.find(t => 
-      (t.recovery_email?.toLowerCase() === inputEmail || t.email?.toLowerCase() === inputEmail || t.username?.toLowerCase() === inputEmail) &&
-      (t.password === inputPass || (t.role === 'superadmin' && inputPass === 'raccoon2026') || inputPass === 'thunga0992' || inputPass === '123456')
-    );
-
-    if (teacher) {
-      if (teacher.is_active === false) {
-        setErrorMsg('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ Super Admin.');
-        return;
-      }
-
-      const role = teacher.role || 'teacher';
-      setCurrentAuthUser({
-        uid: teacher.id,
-        role: role,
-        username: teacher.recovery_email || teacher.email || 'admin',
-        name: teacher.name,
-        email: teacher.recovery_email || teacher.email
-      });
-      onLoginSuccess(role);
-    } else if (inputEmail === 'thunga.130992@gmail.com' && inputPass === 'thunga0992') {
-      setCurrentAuthUser({
-        uid: 'teacher_002',
-        role: 'teacher',
-        username: 'thunga.130992@gmail.com',
-        name: 'Trần Thị Thu Nga',
-        email: 'thunga.130992@gmail.com'
-      });
-      onLoginSuccess('teacher');
-    } else {
-      setErrorMsg('Email hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.');
+    setLoading(true);
+    try {
+      const user = await loginTeacherAsync(email, password);
+      onLoginSuccess(user.role);
+    } catch (err) {
+      setErrorMsg(err.message || 'Lỗi đăng nhập giáo viên');
+    } finally {
+      setLoading(false);
     }
   };
 

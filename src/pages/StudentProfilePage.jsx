@@ -46,9 +46,9 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
       localStorage.setItem('vdvh_students', JSON.stringify(students));
     } else {
       updatedStudentObj = {
-        id: studentData?.id || 'st_ntm001',
+        id: studentData?.id || '',
         name: name.trim(),
-        username: studentData?.username || 'nguyentramy',
+        username: studentData?.username || '',
         class: className.trim(),
         gender: gender,
         body: bodyType,
@@ -57,12 +57,12 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
       };
     }
 
-    const currentAuth = JSON.parse(localStorage.getItem('vdvh_current_auth_user') || '{}');
-    if (currentAuth.uid === (studentData?.id || 'st_ntm001')) {
+    const currentAuth = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
+    if (currentAuth.uid === studentData?.id) {
       currentAuth.name = name.trim();
       currentAuth.gender = gender;
       currentAuth.body = bodyType;
-      localStorage.setItem('vdvh_current_auth_user', JSON.stringify(currentAuth));
+      localStorage.setItem('vdvh_current_user', JSON.stringify(currentAuth));
     }
 
     syncStudentToFirestore(updatedStudentObj);
@@ -93,11 +93,13 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
         <div className="flex items-center gap-3">
           <div className="text-right">
             <div className="font-black text-sm text-slate-900 leading-tight">
-              {studentData?.name || name || 'Nguyễn Văn A'}
+              {studentData?.name || name}
             </div>
-            <span className="badge theme-profile-badge font-mono font-bold text-[11px] px-2.5 py-0.5 mt-0.5 inline-block">
-              ID: {studentData?.id || 'st_hs001'}
-            </span>
+            {studentData?.id && (
+              <span className="badge theme-profile-badge font-mono font-bold text-[11px] px-2.5 py-0.5 mt-0.5 inline-block">
+                ID: {studentData.id}
+              </span>
+            )}
           </div>
           {onLogout && (
             <button
