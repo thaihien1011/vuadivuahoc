@@ -31,13 +31,36 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID || '791378523101' }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID || '1:791378523101:web:64ba7cae974b1144353c34' }}
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}'
-
       - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting --project vuadivuahoc-5187a --non-interactive
+        run: |
+          if [ -n "$SA_KEY_1" ]; then
+            echo "$SA_KEY_1" > sa_key.json
+          elif [ -n "$SA_KEY_2" ]; then
+            echo "$SA_KEY_2" > sa_key.json
+          elif [ -n "$SA_KEY_3" ]; then
+            echo "$SA_KEY_3" > sa_key.json
+          elif [ -n "$SA_KEY_4" ]; then
+            echo "$SA_KEY_4" > sa_key.json
+          elif [ -n "$SA_KEY_5" ]; then
+            echo "$SA_KEY_5" > sa_key.json
+          else
+            echo "❌ LỖI KHỞI TẠO: Chưa tìm thấy Secret chìa khóa Firebase trong GitHub Repository Secrets!"
+            echo "Vui lòng truy cập: https://github.com/thaihien1011/vuadivuahoc/settings/secrets/actions"
+            echo "Tạo New Repository Secret đặt tên: FIREBASE_SERVICE_ACCOUNT_KEY và dán nội dung file JSON vào."
+            exit 1
+          fi
+
+          export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
+          npx firebase-tools deploy --only hosting --project vuadivuahoc-5187a --non-interactive
+          rm -f sa_key.json
+        env:
+          SA_KEY_1: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+          SA_KEY_2: ${{ secrets.GCP_SA_KEY }}
+          SA_KEY_3: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SA_KEY_4: ${{ secrets.VUADIVUAH0C_5187A }}
+          SA_KEY_5: ${{ secrets.VUADIVUAHOC_5187A }}
+
+
 
 
 
