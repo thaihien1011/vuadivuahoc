@@ -28,6 +28,24 @@ export async function syncStudentToFirestore(student) {
   }
 }
 
+export async function syncScoreToFirestore(studentId, lessonId, score, stampLevel) {
+  if (!studentId || !lessonId) return;
+  try {
+    const scoreDocRef = doc(db, 'locked_scores', `${studentId}_${lessonId}`);
+    await setDoc(scoreDocRef, {
+      id: `${studentId}_${lessonId}`,
+      student_id: studentId,
+      lesson_id: lessonId,
+      score: score,
+      stamp_level: stampLevel,
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Firestore syncScoreToFirestore error:', err);
+  }
+}
+
+
 export async function loginStudentAsync(inputUsername) {
   const normUsername = (inputUsername || '').trim().toLowerCase();
   if (!normUsername) {
@@ -199,7 +217,35 @@ function setLocal(key, value) {
 export function initLocalStorage() {
   const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
 
-  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS)) setLocal(STORAGE_KEYS.STUDENTS, []);
+  let localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
+  if (!Array.isArray(localStudents) || localStudents.length === 0) {
+    localStudents = [
+      {
+        id: 'st_nth001',
+        username: 'nguyenthaihien',
+        name: 'Nguyen Thai Hien',
+        class: 'Không liên kết',
+        gender: 'male',
+        body: 'base',
+        current_star: 0,
+        must_change_password: false,
+        avatar_config: { hair: 'wi_hair_001', top: 'wi_top_001', bottom_or_skirt: 'wi_bottom_001', footwear: 'wi_shoes_001' }
+      },
+      {
+        id: 'st_ntm001',
+        username: 'nguyentramy',
+        name: 'Nguyễn Trà My',
+        class: 'Lớp 8/8',
+        gender: 'female',
+        body: 'body_female',
+        current_star: 35,
+        must_change_password: false,
+        avatar_config: { hair: 'wi_hair_002', top: 'wi_top_001', bottom_or_skirt: 'wi_bottom_002', footwear: 'wi_shoes_001' }
+      }
+    ];
+    setLocal(STORAGE_KEYS.STUDENTS, localStudents);
+  }
+
   if (!localStorage.getItem(STORAGE_KEYS.TEACHERS)) setLocal(STORAGE_KEYS.TEACHERS, []);
   if (!localStorage.getItem(STORAGE_KEYS.CLASSES)) setLocal(STORAGE_KEYS.CLASSES, []);
   if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) setLocal(STORAGE_KEYS.LESSONS, []);
@@ -222,6 +268,7 @@ export function initLocalStorage() {
 
   localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
 }
+
 
 initLocalStorage();
 
@@ -477,7 +524,25 @@ export async function saveScore(attempt_id) {
 
   const lockedScores = getLocal(STORAGE_KEYS.LOCKED_SCORES, []);
   const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === user.uid);
+  let student = students.find(s => s.id === user.uid);
+
+  if (!student) {
+    student = {
+      id: user.uid,
+      name: user.name || user.username || 'Nguyen Thai Hien',
+      username: user.username || 'nguyenthaihien',
+      class: user.class || 'Không liên kết',
+      gender: user.gender || 'male',
+      body: user.body || 'base',
+      current_star: 0,
+      must_change_password: false,
+      avatar_config: user.avatar_config || {},
+      created_at: new Date().toISOString()
+    };
+    students.push(student);
+    setLocal(STORAGE_KEYS.STUDENTS, students);
+  }
+
   const transactions = getLocal(STORAGE_KEYS.STAR_TRANSACTIONS, []);
 
   const existingBest = lockedScores.find(
@@ -526,10 +591,13 @@ export async function saveScore(attempt_id) {
     setLocal(STORAGE_KEYS.LOCKED_SCORES, lockedScores);
     setLocal(STORAGE_KEYS.STUDENTS, students);
     setLocal(STORAGE_KEYS.STAR_TRANSACTIONS, transactions);
-    if (student) {
-      syncStudentToFirestore(student);
-    }
   }
+
+  if (student) {
+    await syncStudentToFirestore(student);
+  }
+  await syncScoreToFirestore(user.uid, attempt.lesson_id, attempt.score, new_stamp);
+
 
   const questionPool = attempt.questions_pool || [];
   const review = attempt.question_ids.map(qid => {
