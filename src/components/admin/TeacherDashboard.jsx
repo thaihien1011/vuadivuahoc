@@ -30,15 +30,16 @@ export default function TeacherDashboard() {
     error: null
   });
 
-  const [filterClass, setFilterClass] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
   const [resetModalStudent, setResetModalStudent] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
-  const [resetResult, setResetResult] = useState(null);
+  const [resetModalData, setResetModalData] = useState(null);
 
   // Sync state
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
 
   // Excel Import state
