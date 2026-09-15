@@ -1,42 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Award } from 'lucide-react';
 import AvatarCanvas from '../avatar/AvatarCanvas';
+import { getLiveStudents, getLiveLockedScores, getClassesTable } from '../../services/api';
 
 export default function LeaderboardTable() {
   const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Scroll to top on mount
     window.scrollTo({ top: 0, behavior: 'instant' });
-
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const lockedScores = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]');
-    const classes = JSON.parse(localStorage.getItem('vdvh_classes') || '[]');
-
-    // Calculate aggregated scores & total stamps per student
-    const ranked = students.map(s => {
-      const sScores = lockedScores.filter(ls => ls.student_id === s.id);
-      const totalScore = sScores.reduce((acc, curr) => acc + curr.score, 0);
-      const totalStamps = sScores.reduce((acc, curr) => acc + (curr.stamp_level || 0), 0);
-      const className = classes.find(c => c.id === s.class_id)?.name || 'Lớp 8A1';
-
-      return {
-        ...s,
-        className,
-        totalScore,
-        totalStamps,
-        lessonsCompleted: sScores.length
-      };
-    });
-
-    // Rank by total score, then by current stars
-    ranked.sort((a, b) => {
-      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-      return b.current_star - a.current_star;
-    });
-
-    setLeaderboardData(ranked);
+    loadLeaderboard();
   }, []);
+
+  const loadLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const students = await getLiveStudents();
+      const lockedScores = await getLiveLockedScores();
+      const classes = getClassesTable();
+
+      // Calculate aggregated scores & total stamps per student
+      const ranked = students.map(s => {
+        const sScores = lockedScores.filter(ls => ls.student_id === s.id);
+        const totalScore = sScores.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        const totalStamps = sScores.reduce((acc, curr) => acc + (curr.stamp_level || 0), 0);
+        const className = s.class || classes.find(c => c.id === s.class_id)?.name || 'Không liên kết';
+
+        return {
+          ...s,
+          className,
+          totalScore,
+          totalStamps,
+          lessonsCompleted: sScores.length
+        };
+      });
+
+      // Rank by total score, then by current stars
+      ranked.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        return (b.current_star || 0) - (a.current_star || 0);
+      });
+
+      setLeaderboardData(ranked);
+    } catch (err) {
+      console.warn('Leaderboard load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const getInitials = (name) => {
     if (!name) return 'HS';

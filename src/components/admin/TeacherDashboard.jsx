@@ -11,7 +11,7 @@ import {
   getWardrobeCatalogTable, saveWardrobeCatalogTable, createWardrobeItemRecord, deleteWardrobeItemRecord,
   createStudentRecord, updateStudentRecord, deleteStudentRecord, toggleStudentStatus,
   getTeachersTable, saveTeachersTable, createTeacherRecord, updateTeacherRecord, deleteTeacherRecord, toggleTeacherStatus,
-  seedFirestoreTables, getCurrentAuthUser, getAllLessons
+  seedFirestoreTables, getCurrentAuthUser, getAllLessons, getLiveStudents
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 
@@ -23,29 +23,29 @@ export default function TeacherDashboard() {
   const [students, setStudents] = useState([]);
   const [classesList, setClassesList] = useState([]);
   const [exportJob, setExportJob] = useState({
-    isExporting: false,
+    status: 'idle',
     progress: 0,
-    statusMsg: '',
-    workbook: null,
-    fileName: ''
+    total: 0,
+    currentStep: '',
+    error: null
   });
-  const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
-  const [teachersList, setTeachersList] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('ALL');
+
+  const [filterClass, setFilterClass] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [teacherSearchQuery, setTeacherSearchQuery] = useState('');
-  const [resetModalData, setResetModalData] = useState(null);
-  const [sheetId, setSheetId] = useState('1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo');
+  const [resetModalStudent, setResetModalStudent] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
+
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
-  const [syncing, setSyncing] = useState(false);
 
-  // New Class Form State
-  const [newClassName, setNewClassName] = useState('');
+  // Excel Import state
+  const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState(null);
 
-  // Editing Wardrobe Item State
-  const [editingItem, setEditingItem] = useState(null);
-
-  // Student Modals State
+  // Management CRUD Modal States
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [studentForm, setStudentForm] = useState({
@@ -53,15 +53,28 @@ export default function TeacherDashboard() {
     username: '',
     gender: 'male',
     class: 'Lớp 8/8',
-    current_star: 0,
-    is_active: true
+    current_star: 0
   });
 
-  // Admin / Teacher Modals State
+  const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
+  const [isAddWardrobeOpen, setIsAddWardrobeOpen] = useState(false);
+  const [wardrobeForm, setWardrobeForm] = useState({
+    id: '',
+    name: '',
+    category: 'hair',
+    star_cost: 5,
+    icon: '✂️'
+  });
+
+  const [classesManagement, setClassesManagement] = useState([]);
+  const [newClassName, setNewClassName] = useState('');
+
+  const [teachersList, setTeachersList] = useState([]);
   const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [teacherForm, setTeacherForm] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     role: 'teacher',
@@ -75,7 +88,7 @@ export default function TeacherDashboard() {
   }, []);
 
   const loadData = async () => {
-    const list = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
+    const list = await getLiveStudents();
     setStudents(list);
     setClassesList(getClassesTable());
     setWardrobeCatalog(getWardrobeCatalogTable());

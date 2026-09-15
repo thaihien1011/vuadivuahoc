@@ -1,10 +1,62 @@
 // Cloud Functions Simulation API Engine for "Vừa Đi Vừa Học" (vuadivuahoc)
-// Implements 10/10 functions according to cloud-functions-spec.md
+// Single Source of Truth: Cloud Firestore Engine
 
 import { STAMP_REWARD_TABLE, WARDROBE_ITEMS_CATALOG } from '../config/constants';
 import * as XLSX from 'xlsx';
 import { db } from './firebaseConfig';
-import { collection, doc, getDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+
+export async function getLiveStudents() {
+  try {
+    const snap = await getDocs(collection(db, 'students'));
+    const list = [];
+    snap.forEach(d => list.push({ ...d.data(), id: d.id }));
+    setLocal(STORAGE_KEYS.STUDENTS, list);
+    return list;
+  } catch (err) {
+    console.warn('getLiveStudents error:', err);
+    return getLocal(STORAGE_KEYS.STUDENTS, []);
+  }
+}
+
+export async function getLiveStudent(studentId) {
+  if (!studentId) return null;
+  try {
+    const docSnap = await getDoc(doc(db, 'students', studentId));
+    if (docSnap.exists()) {
+      const data = { ...docSnap.data(), id: docSnap.id };
+      const local = getLocal(STORAGE_KEYS.STUDENTS, []);
+      const idx = local.findIndex(s => s.id === studentId);
+      if (idx !== -1) local[idx] = data;
+      else local.push(data);
+      setLocal(STORAGE_KEYS.STUDENTS, local);
+      return data;
+    }
+  } catch (err) {
+    console.warn('getLiveStudent error:', err);
+  }
+  const local = getLocal(STORAGE_KEYS.STUDENTS, []);
+  return local.find(s => s.id === studentId) || null;
+}
+
+export async function getLiveLockedScores(studentId) {
+  try {
+    let snap;
+    if (studentId) {
+      const q = query(collection(db, 'locked_scores'), where('student_id', '==', studentId));
+      snap = await getDocs(q);
+    } else {
+      snap = await getDocs(collection(db, 'locked_scores'));
+    }
+    const scores = [];
+    snap.forEach(d => scores.push({ ...d.data(), id: d.id }));
+    setLocal(STORAGE_KEYS.LOCKED_SCORES, scores);
+    return scores;
+  } catch (err) {
+    console.warn('getLiveLockedScores error:', err);
+    return getLocal(STORAGE_KEYS.LOCKED_SCORES, []).filter(s => !studentId || s.student_id === studentId);
+  }
+}
 
 export async function syncStudentToFirestore(student) {
   if (!student || !student.id) return;
@@ -18,7 +70,7 @@ export async function syncStudentToFirestore(student) {
       class: student.class || 'Không liên kết',
       gender: student.gender || 'female',
       body: student.body || (student.gender === 'female' ? 'body_female' : 'base'),
-      current_star: student.current_star || 0,
+      current_star: student.current_star !== undefined ? student.current_star : 0,
       must_change_password: student.must_change_password || false,
       avatar_config: student.avatar_config || {},
       updated_at: new Date().toISOString()
@@ -45,36 +97,37 @@ export async function syncScoreToFirestore(studentId, lessonId, score, stampLeve
   }
 }
 
-
 export async function loginStudentAsync(inputUsername) {
   const normUsername = (inputUsername || '').trim().toLowerCase();
   if (!normUsername) {
     throw new Error('Vui lòng nhập tên đăng nhập học sinh');
   }
   
-  // 1. Check local storage first
-  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
-  let student = localStudents.find(s => 
-    (s.username && s.username.toLowerCase() === normUsername) || 
-    (s.id && s.id.toLowerCase() === normUsername)
-  );
+  let student = null;
 
-  // 2. Query Cloud Firestore if not found locally
-  if (!student) {
-    try {
-      const q = query(collection(db, 'students'), where('username', '==', normUsername));
-      const querySnap = await getDocs(q);
-      if (!querySnap.empty) {
-        student = querySnap.docs[0].data();
-      } else {
-        const docSnap = await getDoc(doc(db, 'students', normUsername));
-        if (docSnap.exists()) {
-          student = docSnap.data();
-        }
+  // 1. Direct Cloud Firestore query (Single Source of Truth)
+  try {
+    const q = query(collection(db, 'students'), where('username', '==', normUsername));
+    const querySnap = await getDocs(q);
+    if (!querySnap.empty) {
+      student = { ...querySnap.docs[0].data(), id: querySnap.docs[0].id };
+    } else {
+      const docSnap = await getDoc(doc(db, 'students', normUsername));
+      if (docSnap.exists()) {
+        student = { ...docSnap.data(), id: docSnap.id };
       }
-    } catch (err) {
-      console.warn('Firestore student login query error:', err);
     }
+  } catch (err) {
+    console.warn('Firestore student login query error:', err);
+  }
+
+  // 2. Fallback to local cache if offline
+  if (!student) {
+    const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
+    student = localStudents.find(s => 
+      (s.username && s.username.toLowerCase() === normUsername) || 
+      (s.id && s.id.toLowerCase() === normUsername)
+    );
   }
 
   if (!student) {
@@ -85,15 +138,7 @@ export async function loginStudentAsync(inputUsername) {
     throw new Error('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
   }
 
-  // Cache/update student locally
-  const existingIdx = localStudents.findIndex(s => s.id === student.id);
-  if (existingIdx !== -1) {
-    localStudents[existingIdx] = student;
-  } else {
-    localStudents.push(student);
-  }
-  setLocal(STORAGE_KEYS.STUDENTS, localStudents);
-
+  // Update session
   setCurrentAuthUser({
     uid: student.id,
     role: 'student',
@@ -105,6 +150,7 @@ export async function loginStudentAsync(inputUsername) {
 
   return student;
 }
+
 
 export async function registerStudentAsync(studentData) {
   const normUsername = (studentData.username || '').trim().toLowerCase();
@@ -213,39 +259,11 @@ function setLocal(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-// Initialize LocalStorage safely without overwriting live database/synced content
+// Initialize LocalStorage safely without hardcoded dummy data
 export function initLocalStorage() {
   const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
 
-  let localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
-  if (!Array.isArray(localStudents) || localStudents.length === 0) {
-    localStudents = [
-      {
-        id: 'st_nth001',
-        username: 'nguyenthaihien',
-        name: 'Nguyen Thai Hien',
-        class: 'Không liên kết',
-        gender: 'male',
-        body: 'base',
-        current_star: 0,
-        must_change_password: false,
-        avatar_config: { hair: 'wi_hair_001', top: 'wi_top_001', bottom_or_skirt: 'wi_bottom_001', footwear: 'wi_shoes_001' }
-      },
-      {
-        id: 'st_ntm001',
-        username: 'nguyentramy',
-        name: 'Nguyễn Trà My',
-        class: 'Lớp 8/8',
-        gender: 'female',
-        body: 'body_female',
-        current_star: 35,
-        must_change_password: false,
-        avatar_config: { hair: 'wi_hair_002', top: 'wi_top_001', bottom_or_skirt: 'wi_bottom_002', footwear: 'wi_shoes_001' }
-      }
-    ];
-    setLocal(STORAGE_KEYS.STUDENTS, localStudents);
-  }
-
+  if (!localStorage.getItem(STORAGE_KEYS.STUDENTS)) setLocal(STORAGE_KEYS.STUDENTS, []);
   if (!localStorage.getItem(STORAGE_KEYS.TEACHERS)) setLocal(STORAGE_KEYS.TEACHERS, []);
   if (!localStorage.getItem(STORAGE_KEYS.CLASSES)) setLocal(STORAGE_KEYS.CLASSES, []);
   if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) setLocal(STORAGE_KEYS.LESSONS, []);
@@ -254,20 +272,10 @@ export function initLocalStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.LOCKED_SCORES)) setLocal(STORAGE_KEYS.LOCKED_SCORES, []);
   if (!localStorage.getItem(STORAGE_KEYS.STUDENT_WARDROBE)) setLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
   if (!localStorage.getItem(STORAGE_KEYS.ATTEMPTS)) setLocal(STORAGE_KEYS.ATTEMPTS, []);
-  
-  if (!localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
-    setLocal(STORAGE_KEYS.CURRENT_USER, {
-      uid: 'st_nth001',
-      role: 'student',
-      username: 'nguyenthaihien',
-      name: 'Nguyen Thai Hien',
-      gender: 'male',
-      body: 'base'
-    });
-  }
 
   localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
 }
+
 
 
 initLocalStorage();
@@ -1162,12 +1170,19 @@ export function toggleStudentStatus(studentId) {
   return { success: true, student };
 }
 
-export function deleteStudentRecord(studentId) {
+export async function deleteStudentRecord(studentId) {
+  if (!studentId) return { success: false };
+  try {
+    await deleteDoc(doc(db, 'students', studentId));
+  } catch (err) {
+    console.warn('deleteStudentRecord Firestore error:', err);
+  }
   const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const filtered = students.filter(s => s.id !== studentId);
   setLocal(STORAGE_KEYS.STUDENTS, filtered);
   return { success: true };
 }
+
 
 // 4. Teacher / Admin Table Complete CRUD API (Super Admin Access)
 export function getTeachersTable() {

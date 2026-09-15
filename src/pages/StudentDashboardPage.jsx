@@ -7,7 +7,7 @@ import LeaderboardTable from '../components/leaderboard/LeaderboardTable';
 import DuolingoLeftSidebar from '../components/navigation/DuolingoLeftSidebar';
 import StudentProfilePage from './StudentProfilePage';
 import RaccoonAiModal from '../components/ai/RaccoonAiModal';
-import { getCurrentAuthUser, getAllLessons } from '../services/api';
+import { getCurrentAuthUser, getAllLessons, getLiveStudent, getLiveLockedScores } from '../services/api';
 import { useActiveTheme } from '../services/theme';
 
 export default function StudentDashboardPage({ onLogout }) {
@@ -26,19 +26,21 @@ export default function StudentDashboardPage({ onLogout }) {
 
   const loadStudentState = async () => {
     const user = getCurrentAuthUser();
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const currentSt = students.find(s => s.id === user?.uid);
+    if (!user?.uid) return;
 
-    setStudentData(currentSt || { name: user?.name || 'Nguyễn Văn A', class: 'Lớp 8A1', current_star: 0 });
+    // 1. Fetch live student document from Cloud Firestore
+    const currentSt = await getLiveStudent(user.uid);
+    setStudentData(currentSt || { name: user.name || 'Học sinh', class: 'Không liên kết', current_star: 0 });
     
-    // Fetch live lessons from Cloud Firestore
+    // 2. Fetch live lessons from Cloud Firestore
     const liveLessons = await getAllLessons();
     setLessons(liveLessons);
 
-    const allLocked = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]');
-    const studentLocked = allLocked.filter(ls => ls.student_id === user?.uid);
+    // 3. Fetch live locked scores for this student from Cloud Firestore
+    const studentLocked = await getLiveLockedScores(user.uid);
     setLockedScores(studentLocked);
   };
+
 
   const handleSelectLesson = (lessonId) => {
     setSelectedLessonId(lessonId);
