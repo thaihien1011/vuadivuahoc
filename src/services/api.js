@@ -15,7 +15,7 @@ export async function getLiveStudents() {
     return list;
   } catch (err) {
     console.warn('getLiveStudents error:', err);
-    return getLocal(STORAGE_KEYS.STUDENTS, []);
+    return [];
   }
 }
 
@@ -32,11 +32,17 @@ export async function getLiveStudent(studentId) {
       setLocal(STORAGE_KEYS.STUDENTS, local);
       return data;
     }
+    const q = query(collection(db, 'students'), where('username', '==', studentId.toLowerCase()));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const data = { ...snap.docs[0].data(), id: snap.docs[0].id };
+      return data;
+    }
+    return null;
   } catch (err) {
     console.warn('getLiveStudent error:', err);
+    return null;
   }
-  const local = getLocal(STORAGE_KEYS.STUDENTS, []);
-  return local.find(s => s.id === studentId) || null;
 }
 
 export async function getLiveLockedScores(studentId) {
@@ -66,6 +72,7 @@ export async function syncStudentToFirestore(student) {
       id: student.id,
       name: student.name,
       username: student.username,
+      password: student.password || '123456',
       class_id: student.class_id || student.class || 'Không liên kết',
       class: student.class || 'Không liên kết',
       gender: student.gender || 'female',
@@ -97,7 +104,7 @@ export async function syncScoreToFirestore(studentId, lessonId, score, stampLeve
   }
 }
 
-export async function loginStudentAsync(inputUsername) {
+export async function loginStudentAsync(inputUsername, inputPassword) {
   const normUsername = (inputUsername || '').trim().toLowerCase();
   if (!normUsername) {
     throw new Error('Vui lòng nhập tên đăng nhập học sinh');
@@ -105,7 +112,7 @@ export async function loginStudentAsync(inputUsername) {
   
   let student = null;
 
-  // 1. Direct Cloud Firestore query (Single Source of Truth)
+  // 1. Direct Cloud Firestore query (Strict Single Source of Truth)
   try {
     const q = query(collection(db, 'students'), where('username', '==', normUsername));
     const querySnap = await getDocs(q);
@@ -115,27 +122,32 @@ export async function loginStudentAsync(inputUsername) {
       const docSnap = await getDoc(doc(db, 'students', normUsername));
       if (docSnap.exists()) {
         student = { ...docSnap.data(), id: docSnap.id };
+      } else {
+        const prefixDoc = await getDoc(doc(db, 'students', `st_${normUsername}`));
+        if (prefixDoc.exists()) {
+          student = { ...prefixDoc.data(), id: prefixDoc.id };
+        }
       }
     }
   } catch (err) {
-    console.warn('Firestore student login query error:', err);
+    console.error('Firestore student login query error:', err);
+    throw new Error('Lỗi kết nối cơ sở dữ liệu Firestore. Vui lòng thử lại.');
   }
 
-  // 2. Fallback to local cache if offline
+  // Strictly reject if not on Firestore - NO local storage fallback!
   if (!student) {
-    const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
-    student = localStudents.find(s => 
-      (s.username && s.username.toLowerCase() === normUsername) || 
-      (s.id && s.id.toLowerCase() === normUsername)
-    );
-  }
-
-  if (!student) {
-    throw new Error('Tài khoản học sinh không tồn tại. Vui lòng kiểm tra lại hoặc Đăng ký.');
+    throw new Error('Tài khoản học sinh không tồn tại trên hệ thống. Vui lòng kiểm tra lại hoặc Đăng ký.');
   }
 
   if (student.is_active === false) {
     throw new Error('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
+  }
+
+  // Verify password if student has a password saved on Firestore
+  if (student.password && inputPassword) {
+    if (student.password !== inputPassword.trim()) {
+      throw new Error('Mật khẩu không chính xác.');
+    }
   }
 
   // Update session
@@ -147,6 +159,16 @@ export async function loginStudentAsync(inputUsername) {
     gender: student.gender,
     body: student.body
   });
+
+  // Keep local storage cache synchronized with verified Firestore student
+  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const idx = localStudents.findIndex(s => s.id === student.id || s.username === student.username);
+  if (idx >= 0) {
+    localStudents[idx] = student;
+  } else {
+    localStudents.push(student);
+  }
+  setLocal(STORAGE_KEYS.STUDENTS, localStudents);
 
   return student;
 }
@@ -165,36 +187,43 @@ export async function registerStudentAsync(studentData) {
     if (!querySnap.empty) {
       throw new Error('Tên đăng nhập này đã được sử dụng trên hệ thống. Vui lòng chọn tên khác.');
     }
+    const docSnap = await getDoc(doc(db, 'students', normUsername));
+    if (docSnap.exists()) {
+      throw new Error('Tên đăng nhập này đã được sử dụng trên hệ thống. Vui lòng chọn tên khác.');
+    }
   } catch (err) {
-    if (err.message.includes('đã được sử dụng')) throw err;
-    console.warn('Firestore register check error:', err);
+    if (err.message && err.message.includes('đã được sử dụng')) throw err;
+    console.error('Firestore register check error:', err);
   }
 
-  // 2. Check LocalStorage for username collision
-  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
-  if (localStudents.some(s => s.username && s.username.toLowerCase() === normUsername)) {
-    throw new Error('Tên đăng nhập này đã được sử dụng.');
-  }
-
-  const bodyType = studentData.gender === 'female' ? 'body_female' : 'base';
+  const bodyType = studentData.gender === 'male' ? 'base' : 'body_female';
+  const studentId = `st_${Date.now()}`;
   const studentObj = {
-    id: `st_${Date.now()}`,
-    name: studentData.name.trim(),
+    id: studentId,
+    name: (studentData.name || '').trim(),
     username: normUsername,
+    password: (studentData.password || '').trim() || '123456',
+    class_id: studentData.class || 'Không liên kết',
     class: studentData.class || 'Không liên kết',
     gender: studentData.gender || 'female',
     body: bodyType,
     current_star: 0,
     must_change_password: false,
     avatar_config: {
-      hair: studentData.gender === 'female' ? 'wi_hair_002' : 'wi_hair_001',
+      hair: studentData.gender === 'male' ? 'wi_hair_001' : 'wi_hair_002',
       top: 'wi_top_001',
-      bottom_or_skirt: studentData.gender === 'female' ? 'wi_bottom_002' : 'wi_bottom_001',
+      bottom_or_skirt: studentData.gender === 'male' ? 'wi_bottom_001' : 'wi_bottom_002',
       footwear: 'wi_shoes_001'
     },
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 
+  // Sync to Firestore FIRST
+  await syncStudentToFirestore(studentObj);
+
+  // Update local storage
+  const localStudents = getLocal(STORAGE_KEYS.STUDENTS, []);
   localStudents.push(studentObj);
   setLocal(STORAGE_KEYS.STUDENTS, localStudents);
 
@@ -207,7 +236,6 @@ export async function registerStudentAsync(studentData) {
     body: studentObj.body
   });
 
-  await syncStudentToFirestore(studentObj);
   return studentObj;
 }
 
@@ -243,7 +271,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v1.6_db_pure';
+const CURRENT_DATA_VERSION = 'v2.2_firestore_strict';
 
 // LocalStorage Helper
 function getLocal(key, defaultValue = []) {
@@ -263,6 +291,13 @@ function setLocal(key, value) {
 export function initLocalStorage() {
   const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
 
+  if (storedVersion !== CURRENT_DATA_VERSION) {
+    localStorage.removeItem(STORAGE_KEYS.STUDENTS);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    localStorage.removeItem(STORAGE_KEYS.LOCKED_SCORES);
+    localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+  }
+
   if (!localStorage.getItem(STORAGE_KEYS.STUDENTS)) setLocal(STORAGE_KEYS.STUDENTS, []);
   if (!localStorage.getItem(STORAGE_KEYS.TEACHERS)) setLocal(STORAGE_KEYS.TEACHERS, []);
   if (!localStorage.getItem(STORAGE_KEYS.CLASSES)) setLocal(STORAGE_KEYS.CLASSES, []);
@@ -272,8 +307,6 @@ export function initLocalStorage() {
   if (!localStorage.getItem(STORAGE_KEYS.LOCKED_SCORES)) setLocal(STORAGE_KEYS.LOCKED_SCORES, []);
   if (!localStorage.getItem(STORAGE_KEYS.STUDENT_WARDROBE)) setLocal(STORAGE_KEYS.STUDENT_WARDROBE, []);
   if (!localStorage.getItem(STORAGE_KEYS.ATTEMPTS)) setLocal(STORAGE_KEYS.ATTEMPTS, []);
-
-  localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
 }
 
 
@@ -535,20 +568,26 @@ export async function saveScore(attempt_id) {
   let student = students.find(s => s.id === user.uid);
 
   if (!student) {
-    student = {
-      id: user.uid,
-      name: user.name || user.username || 'Nguyen Thai Hien',
-      username: user.username || 'nguyenthaihien',
-      class: user.class || 'Không liên kết',
-      gender: user.gender || 'male',
-      body: user.body || 'base',
-      current_star: 0,
-      must_change_password: false,
-      avatar_config: user.avatar_config || {},
-      created_at: new Date().toISOString()
-    };
-    students.push(student);
-    setLocal(STORAGE_KEYS.STUDENTS, students);
+    student = await getLiveStudent(user.uid);
+    if (student) {
+      students.push(student);
+      setLocal(STORAGE_KEYS.STUDENTS, students);
+    } else {
+      student = {
+        id: user.uid,
+        name: user.name || user.username || 'Học sinh',
+        username: user.username || 'hocsinh',
+        class: user.class || 'Không liên kết',
+        gender: user.gender || 'female',
+        body: user.body || 'body_female',
+        current_star: 0,
+        must_change_password: false,
+        avatar_config: user.avatar_config || {},
+        created_at: new Date().toISOString()
+      };
+      students.push(student);
+      setLocal(STORAGE_KEYS.STUDENTS, students);
+    }
   }
 
   const transactions = getLocal(STORAGE_KEYS.STAR_TRANSACTIONS, []);

@@ -170,7 +170,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center">
             ⚡ Đăng Nhập Nhanh Trải Nghiệm Demo:
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <button
               type="button"
               onClick={() => handleQuickStudentLogin('st_ntm001', 'Nguyễn Trà My', 'nguyentramy')}
@@ -181,18 +181,6 @@ export default function LoginPage({ onLoginSuccess }) {
                 <span className="text-[10px] text-emerald-700 bg-emerald-200/60 px-1.5 py-0.5 rounded font-bold">Lớp 8/8</span>
               </div>
               <div className="text-[10px] text-slate-600 font-bold">nguyentramy</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickStudentLogin('st_nth001', 'Nguyen Thai Hien', 'nguyenthaihien')}
-              className="p-3 bg-sky-50 border-2 border-sky-300 rounded-2xl text-left hover:bg-sky-100 transition-colors"
-            >
-              <div className="text-xs font-black text-sky-900 flex items-center justify-between">
-                <span>👦 Thai Hien</span>
-                <span className="text-[10px] text-sky-700 bg-sky-200/60 px-1.5 py-0.5 rounded font-bold">Test</span>
-              </div>
-              <div className="text-[10px] text-slate-600 font-bold">nguyenthaihien</div>
             </button>
           </div>
         </div>

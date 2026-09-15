@@ -17,7 +17,7 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
     setErrorMsg('');
     setLoading(true);
     try {
-      await loginStudentAsync(username);
+      await loginStudentAsync(username, password);
       onLoginSuccess('student');
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi đăng nhập học sinh');

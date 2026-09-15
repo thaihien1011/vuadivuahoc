@@ -32,7 +32,8 @@ export default function StudentRegisterPage({ onRegisterSuccess, onSwitchToLogin
         name,
         username,
         class: className,
-        gender
+        gender,
+        password
       });
       onRegisterSuccess('student');
     } catch (err) {

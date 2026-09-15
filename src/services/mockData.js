@@ -53,23 +53,6 @@ export const INITIAL_STUDENTS = [
       bottom_or_skirt: 'wi_bottom_002',
       footwear: 'wi_shoes_001'
     }
-  },
-  {
-    id: 'st_nth001',
-    username: 'nguyenthaihien',
-    name: 'Nguyen Thai Hien',
-    class_id: 'class_none',
-    class: 'Không liên kết',
-    gender: 'male',
-    body: 'base',
-    current_star: 0,
-    must_change_password: false,
-    avatar_config: {
-      hair: 'wi_hair_001',
-      top: 'wi_top_001',
-      bottom_or_skirt: 'wi_bottom_001',
-      footwear: 'wi_shoes_001'
-    }
   }
 ];
 
@@ -52621,10 +52604,6 @@ export const INITIAL_STUDENT_WARDROBES = [
   { student_id: 'st_ntm001', item_id: 'wi_top_001', purchased_at: '2026-09-11T10:00:00Z' },
   { student_id: 'st_ntm001', item_id: 'wi_bottom_002', purchased_at: '2026-09-11T10:00:00Z' },
   { student_id: 'st_ntm001', item_id: 'wi_shoes_001', purchased_at: '2026-09-11T10:00:00Z' },
-  { student_id: 'st_nth001', item_id: 'wi_hair_001', purchased_at: '2026-09-10T10:00:00Z' },
-  { student_id: 'st_nth001', item_id: 'wi_top_001', purchased_at: '2026-09-10T10:00:00Z' },
-  { student_id: 'st_nth001', item_id: 'wi_bottom_001', purchased_at: '2026-09-10T10:00:00Z' },
-  { student_id: 'st_nth001', item_id: 'wi_shoes_001', purchased_at: '2026-09-10T10:00:00Z' },
   { student_id: 'st_hs001', item_id: 'wi_hair_002', purchased_at: '2026-08-20T10:00:00Z' },
   { student_id: 'st_hs001', item_id: 'wi_top_002', purchased_at: '2026-08-20T10:00:00Z' },
   { student_id: 'st_hs001', item_id: 'wi_bottom_002', purchased_at: '2026-08-20T10:00:00Z' },
@@ -52637,11 +52616,6 @@ export const INITIAL_QUIZ_ATTEMPTS = [
   { id: 'att_ntm_02', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 7, duration_seconds: 180, submitted_at: '2026-09-03T09:15:00Z' },
   { id: 'att_ntm_03', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 9, duration_seconds: 145, submitted_at: '2026-09-06T14:20:00Z' },
   { id: 'att_ntm_04', student_id: 'st_ntm001', lesson_id: 'LS_DIENBIEN', status: 'submitted', score: 10, duration_seconds: 110, submitted_at: '2026-09-10T10:00:00Z' },
-
-  // Nguyen Thai Hien (st_nth001) - 3 lượt làm quiz
-  { id: 'att_nth_01', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 6, duration_seconds: 200, submitted_at: '2026-09-02T10:00:00Z' },
-  { id: 'att_nth_02', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 8, duration_seconds: 165, submitted_at: '2026-09-05T11:30:00Z' },
-  { id: 'att_nth_03', student_id: 'st_nth001', lesson_id: 'LS_LAICHAU', status: 'submitted', score: 10, duration_seconds: 130, submitted_at: '2026-09-09T15:45:00Z' },
 
   // Nguyễn Văn A (st_hs001) - 4 lượt làm quiz
   { id: 'att_st1_01', student_id: 'st_hs001', lesson_id: 'LS_LAOCAI', status: 'submitted', score: 4, duration_seconds: 240, submitted_at: '2026-09-01T09:00:00Z' },
