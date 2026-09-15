@@ -90,25 +90,13 @@ export default function TeacherLoginPage({ onLoginSuccess }) {
 
         <button 
           type="submit" 
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
+          disabled={loading}
+          className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
         >
           <LogIn className="w-4 h-4" />
-          Đăng nhập Admin
+          {loading ? 'Đang xác thực...' : 'Đăng nhập Admin'}
         </button>
       </form>
-
-      {/* Account Info Box */}
-      <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl space-y-1.5">
-        <div className="text-[11px] font-black text-amber-950 flex items-center gap-1">
-          <span>👑 Super Admin:</span>
-        </div>
-        <div className="text-[11px] text-slate-700 font-mono">
-          Username: <span className="font-bold text-amber-800">superadmin</span> | Pass: <span className="font-bold text-amber-800">raccoon2026</span>
-        </div>
-        <div className="text-[10px] text-slate-500 border-t border-amber-200/60 pt-1 mt-1 font-mono">
-          GV Admin: <span className="font-semibold text-slate-700">thunga.130992@gmail.com</span> (Pass: <span className="font-semibold text-slate-700">thunga0992</span>)
-        </div>
-      </div>
     </div>
   );
 }

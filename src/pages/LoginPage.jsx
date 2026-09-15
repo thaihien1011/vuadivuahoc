@@ -5,8 +5,8 @@ import { removeVietnameseTones } from '../utils/textUtils';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [role, setRole] = useState('student'); // 'student' | 'teacher'
-  const [username, setUsername] = useState('nguyentramy');
-  const [password, setPassword] = useState('123456');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -164,26 +164,6 @@ export default function LoginPage({ onLoginSuccess }) {
             ĐĂNG NHẬP NGAY
           </button>
         </form>
-
-        {/* Quick Demo Launchers */}
-        <div className="pt-4 border-t border-gray-200 space-y-2">
-          <div className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center">
-            ⚡ Đăng Nhập Nhanh Trải Nghiệm Demo:
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickStudentLogin('st_ntm001', 'Nguyễn Trà My', 'nguyentramy')}
-              className="p-3 bg-emerald-50 border-2 border-emerald-300 rounded-2xl text-left hover:bg-emerald-100 transition-colors"
-            >
-              <div className="text-xs font-black text-emerald-900 flex items-center justify-between">
-                <span>👧 Nguyễn Trà My</span>
-                <span className="text-[10px] text-emerald-700 bg-emerald-200/60 px-1.5 py-0.5 rounded font-bold">Lớp 8/8</span>
-              </div>
-              <div className="text-[10px] text-slate-600 font-bold">nguyentramy</div>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
