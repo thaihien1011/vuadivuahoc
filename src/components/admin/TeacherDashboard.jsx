@@ -11,7 +11,8 @@ import {
   getWardrobeCatalogTable, saveWardrobeCatalogTable, createWardrobeItemRecord, deleteWardrobeItemRecord,
   createStudentRecord, updateStudentRecord, deleteStudentRecord, toggleStudentStatus,
   getTeachersTable, saveTeachersTable, createTeacherRecord, updateTeacherRecord, deleteTeacherRecord, toggleTeacherStatus,
-  seedFirestoreTables, getCurrentAuthUser, getAllLessons, getLiveStudents
+  seedFirestoreTables, getCurrentAuthUser, getAllLessons, getLiveStudents,
+  getLiveQuizAttempts, getLiveLockedScores
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 
@@ -21,6 +22,8 @@ export default function TeacherDashboard() {
 
   const [activeTab, setActiveTab] = useState('nckh_report'); // 'nckh_report' | 'students' | 'classes' | 'wardrobe_catalog' | 'admins' | 'sync' | 'map'
   const [students, setStudents] = useState([]);
+  const [quizAttempts, setQuizAttempts] = useState([]);
+  const [lockedScores, setLockedScores] = useState([]);
   const [classesList, setClassesList] = useState([]);
   const [exportJob, setExportJob] = useState({
     status: 'idle',
@@ -89,12 +92,18 @@ export default function TeacherDashboard() {
   }, []);
 
   const loadData = async () => {
-    const list = await getLiveStudents();
+    const [list, liveAttempts, liveLocked, liveLessons] = await Promise.all([
+      getLiveStudents(),
+      getLiveQuizAttempts(),
+      getLiveLockedScores(),
+      getAllLessons()
+    ]);
     setStudents(list);
+    setQuizAttempts(liveAttempts);
+    setLockedScores(liveLocked);
     setClassesList(getClassesTable());
     setWardrobeCatalog(getWardrobeCatalogTable());
     setTeachersList(getTeachersTable());
-    const liveLessons = await getAllLessons();
     setLessons(liveLessons);
   };
 
@@ -298,12 +307,37 @@ export default function TeacherDashboard() {
   };
 
   // HELPER: Get quiz attempt progress statistics per student
-  const getStudentProgressData = (stId) => {
-    let rawAttempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]');
+  const getStudentProgressData = (stId, stUsername) => {
+    const allAttempts = (quizAttempts && quizAttempts.length > 0)
+      ? quizAttempts
+      : (JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]'));
 
-    const attempts = (rawAttempts || [])
-      .filter(a => a.student_id === stId && a.status === 'submitted')
-      .sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
+    let matchedAttempts = allAttempts.filter(a => 
+      (a.student_id === stId || (stUsername && a.student_id === stUsername)) &&
+      (a.status === 'submitted' || a.score !== undefined)
+    );
+
+    if (matchedAttempts.length === 0) {
+      const allLocked = (lockedScores && lockedScores.length > 0)
+        ? lockedScores
+        : (JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]'));
+      
+      const matchedLocked = allLocked.filter(l => 
+        l.student_id === stId || (stUsername && l.student_id === stUsername)
+      );
+
+      if (matchedLocked.length > 0) {
+        matchedAttempts = matchedLocked.map(l => ({
+          student_id: l.student_id,
+          score: l.score !== undefined ? l.score : (l.highest_score || 0),
+          status: 'submitted',
+          submitted_at: l.updated_at || l.created_at || new Date().toISOString(),
+          duration_seconds: l.duration_seconds || 120
+        }));
+      }
+    }
+
+    const attempts = matchedAttempts.sort((a, b) => new Date(a.submitted_at || 0) - new Date(b.submitted_at || 0));
 
     if (attempts.length === 0) {
       return {
@@ -373,7 +407,7 @@ export default function TeacherDashboard() {
 
         setTimeout(() => {
           const studentStatsList = students.map((st, index) => {
-            const stats = getStudentProgressData(st.id);
+            const stats = getStudentProgressData(st.id, st.username);
             return { st, index, stats };
           });
 
@@ -682,7 +716,7 @@ export default function TeacherDashboard() {
       {/* TAB 0: BÁO CÁO TIẾN BỘ NCKH CHUỖI LẦN THI (MIN, MAX, AVG LEFT, ATTEMPTS RIGHT) */}
       {activeTab === 'nckh_report' && (() => {
         const studentMatrix = filteredStudents.map((st, index) => {
-          const stats = getStudentProgressData(st.id);
+          const stats = getStudentProgressData(st.id, st.username);
           return { st, index, stats };
         });
 

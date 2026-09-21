@@ -64,6 +64,25 @@ export async function getLiveLockedScores(studentId) {
   }
 }
 
+export async function getLiveQuizAttempts(studentId) {
+  try {
+    let snap;
+    if (studentId) {
+      const q = query(collection(db, 'quiz_attempts'), where('student_id', '==', studentId));
+      snap = await getDocs(q);
+    } else {
+      snap = await getDocs(collection(db, 'quiz_attempts'));
+    }
+    const attempts = [];
+    snap.forEach(d => attempts.push({ ...d.data(), id: d.id }));
+    setLocal(STORAGE_KEYS.ATTEMPTS, attempts);
+    return attempts;
+  } catch (err) {
+    console.warn('getLiveQuizAttempts error:', err);
+    return getLocal(STORAGE_KEYS.ATTEMPTS, []).filter(a => !studentId || a.student_id === studentId);
+  }
+}
+
 export async function syncStudentToFirestore(student) {
   if (!student || !student.id) return;
   try {
