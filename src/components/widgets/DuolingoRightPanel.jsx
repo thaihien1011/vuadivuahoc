@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Flame, Star, Award, Trophy, ShoppingBag, CheckCircle2, ChevronRight } from 'lucide-react';
 import AvatarCanvas from '../avatar/AvatarCanvas';
+import { getLiveStudents, getLiveLockedScores } from '../../services/api';
 
 export default function DuolingoRightPanel({ studentData, onNavigate }) {
-  const lockedScores = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]');
-  const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
+  const [lockedScores, setLockedScores] = useState([]);
+  const [topStudents, setTopStudents] = useState([]);
 
-  // Top 3 Leaderboard snippet
-  const topStudents = students.slice(0, 3);
+  useEffect(() => {
+    async function loadRightPanelData() {
+      if (studentData?.id) {
+        const scores = await getLiveLockedScores(studentData.id);
+        setLockedScores(scores);
+      }
+      const allStudents = await getLiveStudents();
+      const sorted = [...allStudents].sort((a, b) => (b.current_star || 0) - (a.current_star || 0));
+      setTopStudents(sorted.slice(0, 3));
+    }
+    loadRightPanelData();
+  }, [studentData?.id, studentData?.current_star]);
 
   return (
     <div className="w-[340px] hidden lg:block space-y-6 pt-6 pr-4">

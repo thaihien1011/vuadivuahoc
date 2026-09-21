@@ -12,7 +12,7 @@ import {
   createStudentRecord, updateStudentRecord, deleteStudentRecord, toggleStudentStatus,
   getTeachersTable, saveTeachersTable, createTeacherRecord, updateTeacherRecord, deleteTeacherRecord, toggleTeacherStatus,
   seedFirestoreTables, getCurrentAuthUser, getAllLessons, getLiveStudents,
-  getLiveQuizAttempts, getLiveLockedScores
+  getLiveQuizAttempts, getLiveLockedScores, getLiveClasses, getLiveTeachers
 } from '../../services/api';
 import InteractiveMap from '../map/InteractiveMap';
 
@@ -61,6 +61,7 @@ export default function TeacherDashboard() {
   });
 
   const [wardrobeCatalog, setWardrobeCatalog] = useState([]);
+  const [editingItem, setEditingItem] = useState(null);
   const [isAddWardrobeOpen, setIsAddWardrobeOpen] = useState(false);
   const [wardrobeForm, setWardrobeForm] = useState({
     id: '',
@@ -92,30 +93,33 @@ export default function TeacherDashboard() {
   }, []);
 
   const loadData = async () => {
-    const [list, liveAttempts, liveLocked, liveLessons] = await Promise.all([
+    const [list, liveAttempts, liveLocked, liveLessons, liveClasses, liveTeachers] = await Promise.all([
       getLiveStudents(),
       getLiveQuizAttempts(),
       getLiveLockedScores(),
-      getAllLessons()
+      getAllLessons(),
+      getLiveClasses(),
+      getLiveTeachers()
     ]);
     setStudents(list);
     setQuizAttempts(liveAttempts);
     setLockedScores(liveLocked);
-    setClassesList(getClassesTable());
+    setClassesList(liveClasses);
+    setClassesManagement(liveClasses);
     setWardrobeCatalog(getWardrobeCatalogTable());
-    setTeachersList(getTeachersTable());
+    setTeachersList(liveTeachers);
     setLessons(liveLessons);
   };
 
-  const handleCreateStudent = (e) => {
+  const handleCreateStudent = async (e) => {
     e.preventDefault();
     if (!studentForm.name.trim() || !studentForm.username.trim()) {
       alert('Vui lòng nhập đầy đủ Họ tên và Username');
       return;
     }
     try {
-      createStudentRecord(studentForm);
-      loadData();
+      await createStudentRecord(studentForm);
+      await loadData();
       setIsAddStudentOpen(false);
       setStudentForm({ name: '', username: '', gender: 'male', class: 'Lớp 8/8', current_star: 0 });
       alert(`Đã tạo học sinh "${studentForm.name}" thành công!`);
@@ -124,12 +128,12 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleUpdateStudentSubmit = (e) => {
+  const handleUpdateStudentSubmit = async (e) => {
     e.preventDefault();
     if (!editingStudent) return;
     try {
-      updateStudentRecord(editingStudent.id, editingStudent);
-      loadData();
+      await updateStudentRecord(editingStudent.id, editingStudent);
+      await loadData();
       setEditingStudent(null);
       alert(`Đã cập nhật thông tin học sinh "${editingStudent.name}"!`);
     } catch (err) {
@@ -137,20 +141,20 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleDeleteStudent = (studentId, studentName) => {
+  const handleDeleteStudent = async (studentId, studentName) => {
     if (confirm(`Bạn có chắc chắn muốn xóa học sinh "${studentName}" khỏi hệ thống?`)) {
-      deleteStudentRecord(studentId);
-      loadData();
+      await deleteStudentRecord(studentId);
+      await loadData();
       alert(`Đã xóa học sinh "${studentName}".`);
     }
   };
 
-  const handleToggleStudentStatus = (studentId, studentName, currentActive) => {
+  const handleToggleStudentStatus = async (studentId, studentName, currentActive) => {
     const actionText = currentActive !== false ? 'ngừng kích hoạt' : 'kích hoạt';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của học sinh "${studentName}"?`)) {
       try {
-        toggleStudentStatus(studentId);
-        loadData();
+        await toggleStudentStatus(studentId, currentActive);
+        await loadData();
         alert(`Đã ${actionText} tài khoản học sinh "${studentName}".`);
       } catch (err) {
         alert('Lỗi: ' + err.message);
@@ -159,15 +163,15 @@ export default function TeacherDashboard() {
   };
 
   // Teacher / Admin Handlers (Super Admin)
-  const handleCreateTeacher = (e) => {
+  const handleCreateTeacher = async (e) => {
     e.preventDefault();
     if (!teacherForm.name.trim() || !teacherForm.email.trim() || !teacherForm.password.trim()) {
       alert('Vui lòng điền đầy đủ Tên, Username/Email và Mật khẩu!');
       return;
     }
     try {
-      createTeacherRecord(teacherForm);
-      loadData();
+      await createTeacherRecord(teacherForm);
+      await loadData();
       setIsAddTeacherOpen(false);
       setTeacherForm({ name: '', email: '', password: '', role: 'teacher', is_active: true });
       alert(`Đã tạo tài khoản quản trị "${teacherForm.name}" thành công!`);
@@ -176,12 +180,12 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleUpdateTeacherSubmit = (e) => {
+  const handleUpdateTeacherSubmit = async (e) => {
     e.preventDefault();
     if (!editingTeacher) return;
     try {
-      updateTeacherRecord(editingTeacher.id, editingTeacher);
-      loadData();
+      await updateTeacherRecord(editingTeacher.id, editingTeacher);
+      await loadData();
       setEditingTeacher(null);
       alert(`Đã cập nhật thông tin tài khoản "${editingTeacher.name}"!`);
     } catch (err) {
@@ -189,12 +193,12 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleToggleTeacherStatus = (teacherId, teacherName, currentActive) => {
+  const handleToggleTeacherStatus = async (teacherId, teacherName, currentActive) => {
     const actionText = currentActive !== false ? 'ngừng kích hoạt' : 'kích hoạt';
     if (confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản quản trị "${teacherName}"?`)) {
       try {
-        toggleTeacherStatus(teacherId);
-        loadData();
+        await toggleTeacherStatus(teacherId, currentActive);
+        await loadData();
         alert(`Đã ${actionText} tài khoản "${teacherName}".`);
       } catch (err) {
         alert('Lỗi: ' + err.message);
@@ -202,11 +206,11 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleDeleteTeacher = (teacherId, teacherName) => {
+  const handleDeleteTeacher = async (teacherId, teacherName) => {
     if (confirm(`Bạn có chắc chắn muốn xóa tài khoản quản trị "${teacherName}" khỏi hệ thống?`)) {
       try {
-        deleteTeacherRecord(teacherId);
-        loadData();
+        await deleteTeacherRecord(teacherId);
+        await loadData();
         alert(`Đã xóa tài khoản "${teacherName}".`);
       } catch (err) {
         alert('Lỗi xóa: ' + err.message);
@@ -214,15 +218,15 @@ export default function TeacherDashboard() {
     }
   };
 
-  const handleDeleteClass = (classId, className) => {
+  const handleDeleteClass = async (classId, className) => {
     if (confirm(`Bạn có chắc chắn muốn xóa lớp "${className}"?`)) {
-      deleteClassRecord(classId);
-      loadData();
+      await deleteClassRecord(classId);
+      await loadData();
       alert(`Đã xóa lớp "${className}".`);
     }
   };
 
-  const handleAddClass = (e) => {
+  const handleAddClass = async (e) => {
     e.preventDefault();
     if (!newClassName.trim()) return;
     const newCls = {
@@ -233,8 +237,9 @@ export default function TeacherDashboard() {
     };
     const updated = [...classesList, newCls];
     setClassesList(updated);
-    saveClassesTable(updated);
+    await saveClassesTable(updated);
     setNewClassName('');
+    await loadData();
     alert(`Đã thêm lớp "${newCls.name}" thành công vào Bảng Classes!`);
   };
 
@@ -308,9 +313,7 @@ export default function TeacherDashboard() {
 
   // HELPER: Get quiz attempt progress statistics per student
   const getStudentProgressData = (stId, stUsername) => {
-    const allAttempts = (quizAttempts && quizAttempts.length > 0)
-      ? quizAttempts
-      : (JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]'));
+    const allAttempts = quizAttempts || [];
 
     let matchedAttempts = allAttempts.filter(a => 
       (a.student_id === stId || (stUsername && a.student_id === stUsername)) &&
@@ -318,9 +321,7 @@ export default function TeacherDashboard() {
     );
 
     if (matchedAttempts.length === 0) {
-      const allLocked = (lockedScores && lockedScores.length > 0)
-        ? lockedScores
-        : (JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]'));
+      const allLocked = lockedScores || [];
       
       const matchedLocked = allLocked.filter(l => 
         l.student_id === stId || (stUsername && l.student_id === stUsername)

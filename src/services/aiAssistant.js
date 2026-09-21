@@ -339,7 +339,7 @@ const TOPIC_KNOWLEDGE_MAP = [
   }
 ];
 
-export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = false) {
+export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = false, lessons = []) {
   if (!userQuestion || !userQuestion.trim()) return '';
 
   const normalizedQ = normalizeVietnameseText(userQuestion);
@@ -417,8 +417,16 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
   }
 
   // 4. Search dynamic lessons database
-  const activeLessons = JSON.parse(localStorage.getItem('vdvh_lessons') || '[]');
-  const matchedLesson = activeLessons.find(l => {
+  let activeLessons = lessons;
+  if (!activeLessons || activeLessons.length === 0) {
+    try {
+      const { getAllLessons } = await import('./api.js');
+      activeLessons = await getAllLessons();
+    } catch (e) {
+      activeLessons = [];
+    }
+  }
+  const matchedLesson = (activeLessons || []).find(l => {
     const normLoc = normalizeVietnameseText(l.location_name || l.name || '');
     const normProv = normalizeVietnameseText(l.province_name || l.location_name || '');
     return (normLoc && normalizedQ.includes(normLoc)) || (normProv && normalizedQ.includes(normProv));

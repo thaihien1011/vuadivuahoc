@@ -3,8 +3,11 @@ import { User, Star, Award, BookOpen, X, LogOut, CheckCircle2, Palette } from 'l
 import AvatarCanvas from '../avatar/AvatarCanvas';
 import { THEMES, getCurrentTheme, applyTheme } from '../../services/theme';
 
+import { getLiveLockedScores } from '../../services/api';
+
 export default function StudentProfileModal({ studentData, onClose, onLogout }) {
   const [activeTheme, setActiveTheme] = useState(getCurrentTheme());
+  const [lockedScores, setLockedScores] = useState([]);
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -14,13 +17,15 @@ export default function StudentProfileModal({ studentData, onClose, onLogout }) 
     return () => window.removeEventListener('vdvh_theme_changed', handleThemeChange);
   }, []);
 
-  const handleSelectTheme = (themeId) => {
-    applyTheme(themeId);
-    setActiveTheme(themeId);
-  };
-
-  const lockedScores = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]')
-    .filter(ls => ls.student_id === studentData?.id);
+  useEffect(() => {
+    async function loadScores() {
+      if (studentData?.id) {
+        const scores = await getLiveLockedScores(studentData.id);
+        setLockedScores(scores);
+      }
+    }
+    loadScores();
+  }, [studentData?.id]);
 
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">

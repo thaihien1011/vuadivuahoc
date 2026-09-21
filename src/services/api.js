@@ -264,19 +264,6 @@ export async function loginTeacherAsync(inputEmail, inputPassword) {
   if (!normEmail) throw new Error('Vui lòng nhập Email hoặc Tài khoản giáo viên');
   if (!pass) throw new Error('Vui lòng nhập Mật khẩu');
 
-  // Direct superadmin credentials check
-  if ((normEmail === 'superadmin' || normEmail === 'superadmin@vuadivuahoc.edu.vn') && (pass === 'raccoon2026' || pass === '123456')) {
-    const adminUser = {
-      uid: 'superadmin_001',
-      role: 'superadmin',
-      username: 'superadmin',
-      name: 'Super Admin Raccoon',
-      email: 'superadmin@vuadivuahoc.edu.vn'
-    };
-    setCurrentAuthUser(adminUser);
-    return adminUser;
-  }
-
   let teacher = null;
 
   // 1. Direct Cloud Firestore query
@@ -1323,23 +1310,68 @@ export async function importExcelArrayBuffer(arrayBuffer) {
 }
 
 /* ==========================================================================
-   TABLE MANAGEMENT & FIRESTORE SEEDER (NO HARDCODING)
+   TABLE MANAGEMENT & FIRESTORE DIRECT CRUD (NO LOCALSTORAGE NO HARDCODE)
    ========================================================================== */
 
-// 1. Classes Table API
-export function getClassesTable() {
-  return getLocal(STORAGE_KEYS.CLASSES, []);
+// 1. Classes Table Firestore API
+export async function getLiveClasses() {
+  try {
+    const snap = await getDocs(collection(db, 'classes'));
+    const list = [];
+    snap.forEach(d => list.push({ ...d.data(), id: d.id }));
+    if (list.length === 0) {
+      const defaultClasses = [
+        { id: 'cls_8_8', name: 'Lớp 8/8', grade: '8', created_at: new Date().toISOString() },
+        { id: 'cls_8_1', name: 'Lớp 8/1', grade: '8', created_at: new Date().toISOString() },
+        { id: 'cls_8_2', name: 'Lớp 8/2', grade: '8', created_at: new Date().toISOString() },
+        { id: 'cls_none', name: 'Không liên kết', grade: '8', created_at: new Date().toISOString() }
+      ];
+      for (const cls of defaultClasses) {
+        await setDoc(doc(db, 'classes', cls.id), cls, { merge: true });
+      }
+      return defaultClasses;
+    }
+    return list;
+  } catch (err) {
+    console.warn('getLiveClasses error:', err);
+    return [
+      { id: 'cls_8_8', name: 'Lớp 8/8' },
+      { id: 'cls_none', name: 'Không liên kết' }
+    ];
+  }
 }
 
-export function saveClassesTable(classList) {
+export function getClassesTable() {
+  return getLocal(STORAGE_KEYS.CLASSES, [
+    { id: 'cls_8_8', name: 'Lớp 8/8' },
+    { id: 'cls_none', name: 'Không liên kết' }
+  ]);
+}
+
+export async function saveClassesTable(classList) {
+  try {
+    for (const cls of classList) {
+      if (cls && cls.id) {
+        await setDoc(doc(db, 'classes', cls.id), cls, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.warn('saveClassesTable error:', err);
+  }
   setLocal(STORAGE_KEYS.CLASSES, classList);
   return { success: true, count: classList.length };
 }
 
-export function deleteClassRecord(classId) {
-  const list = getClassesTable();
+export async function deleteClassRecord(classId) {
+  if (!classId) return { success: false };
+  try {
+    await deleteDoc(doc(db, 'classes', classId));
+  } catch (err) {
+    console.warn('deleteClassRecord error:', err);
+  }
+  const list = getLocal(STORAGE_KEYS.CLASSES, []);
   const filtered = list.filter(c => c.id !== classId);
-  saveClassesTable(filtered);
+  setLocal(STORAGE_KEYS.CLASSES, filtered);
   return { success: true };
 }
 
@@ -1347,37 +1379,45 @@ export function deleteClassRecord(classId) {
 const WARDROBE_CATALOG_STORAGE_KEY = 'vdvh_wardrobe_catalog';
 
 export function getWardrobeCatalogTable() {
-  return getLocal(WARDROBE_CATALOG_STORAGE_KEY, WARDROBE_ITEMS_CATALOG);
+  return WARDROBE_ITEMS_CATALOG;
 }
 
-export function saveWardrobeCatalogTable(catalog) {
+export async function saveWardrobeCatalogTable(catalog) {
   setLocal(WARDROBE_CATALOG_STORAGE_KEY, catalog);
   return { success: true, count: catalog.length };
 }
 
-export function createWardrobeItemRecord(newItem) {
-  const catalog = getWardrobeCatalogTable();
-  const updated = [newItem, ...catalog];
-  saveWardrobeCatalogTable(updated);
+export async function createWardrobeItemRecord(newItem) {
+  try {
+    if (newItem && newItem.id) {
+      await setDoc(doc(db, 'avatar_items', newItem.id), newItem, { merge: true });
+    }
+  } catch (err) {
+    console.warn('createWardrobeItemRecord error:', err);
+  }
   return { success: true };
 }
 
-export function deleteWardrobeItemRecord(itemId) {
-  const catalog = getWardrobeCatalogTable();
-  const filtered = catalog.filter(i => i.id !== itemId);
-  saveWardrobeCatalogTable(filtered);
+export async function deleteWardrobeItemRecord(itemId) {
+  try {
+    if (itemId) {
+      await deleteDoc(doc(db, 'avatar_items', itemId));
+    }
+  } catch (err) {
+    console.warn('deleteWardrobeItemRecord error:', err);
+  }
   return { success: true };
 }
 
-// 3. Student Table Complete CRUD API
-export function createStudentRecord(newStudent) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+// 3. Student Table Complete CRUD API (Direct Firestore)
+export async function createStudentRecord(newStudent) {
   const studentObj = {
     id: newStudent.id || 'st_' + Date.now(),
-    name: newStudent.name,
+    name: newStudent.name.trim(),
     username: newStudent.username.toLowerCase().trim(),
+    password: newStudent.password || '123456',
     gender: newStudent.gender || 'male',
-    class: newStudent.class || 'Lớp 8A1',
+    class: newStudent.class || 'Lớp 8/8',
     body: newStudent.gender === 'female' ? 'body_female' : 'base',
     current_star: parseInt(newStudent.current_star) || 0,
     streak: 3,
@@ -1386,36 +1426,57 @@ export function createStudentRecord(newStudent) {
     created_at: new Date().toISOString()
   };
 
-  const updated = [studentObj, ...students];
+  try {
+    await setDoc(doc(db, 'students', studentObj.id), studentObj, { merge: true });
+  } catch (err) {
+    console.error('createStudentRecord Firestore error:', err);
+  }
+
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const updated = [studentObj, ...students.filter(s => s.id !== studentObj.id)];
   setLocal(STORAGE_KEYS.STUDENTS, updated);
-  syncStudentToFirestore(studentObj);
   return { success: true, student: studentObj };
 }
 
-export function updateStudentRecord(studentId, updatedFields) {
-  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
-  const student = students.find(s => s.id === studentId);
-  if (!student) throw new Error("Học sinh không tồn tại");
-
-  Object.assign(student, updatedFields);
-  if (updatedFields.gender) {
-    student.body = updatedFields.gender === 'female' ? 'body_female' : 'base';
+export async function updateStudentRecord(studentId, updatedFields) {
+  try {
+    const studentDocRef = doc(db, 'students', studentId);
+    const payload = { ...updatedFields, updated_at: new Date().toISOString() };
+    if (updatedFields.gender) {
+      payload.body = updatedFields.gender === 'female' ? 'body_female' : 'base';
+    }
+    await updateDoc(studentDocRef, payload);
+  } catch (err) {
+    console.warn('updateStudentRecord Firestore error:', err);
   }
 
-  setLocal(STORAGE_KEYS.STUDENTS, students);
-  syncStudentToFirestore(student);
-  return { success: true, student };
-}
-
-export function toggleStudentStatus(studentId) {
   const students = getLocal(STORAGE_KEYS.STUDENTS, []);
   const student = students.find(s => s.id === studentId);
-  if (!student) throw new Error("Học sinh không tồn tại");
+  if (student) {
+    Object.assign(student, updatedFields);
+    if (updatedFields.gender) {
+      student.body = updatedFields.gender === 'female' ? 'body_female' : 'base';
+    }
+    setLocal(STORAGE_KEYS.STUDENTS, students);
+  }
+  return { success: true };
+}
 
-  student.is_active = student.is_active === false ? true : false;
-  setLocal(STORAGE_KEYS.STUDENTS, students);
-  syncStudentToFirestore(student);
-  return { success: true, student };
+export async function toggleStudentStatus(studentId, currentStatus) {
+  const newStatus = currentStatus !== false ? false : true;
+  try {
+    await updateDoc(doc(db, 'students', studentId), { is_active: newStatus, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.warn('toggleStudentStatus Firestore error:', err);
+  }
+
+  const students = getLocal(STORAGE_KEYS.STUDENTS, []);
+  const student = students.find(s => s.id === studentId);
+  if (student) {
+    student.is_active = newStatus;
+    setLocal(STORAGE_KEYS.STUDENTS, students);
+  }
+  return { success: true, is_active: newStatus };
 }
 
 export async function deleteStudentRecord(studentId) {
@@ -1432,36 +1493,40 @@ export async function deleteStudentRecord(studentId) {
 }
 
 
-// 4. Teacher / Admin Table Complete CRUD API (Super Admin Access)
-export function getTeachersTable() {
-  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
-  const hasSuperAdmin = teachers.some(t => t.id === 'superadmin_001' || t.recovery_email === 'superadmin' || t.role === 'superadmin');
-  if (!hasSuperAdmin) {
-    const superAdminObj = {
-      id: 'superadmin_001',
-      name: 'Super Admin Raccoon',
-      recovery_email: 'superadmin',
-      email: 'superadmin@vuadivuahoc.edu.vn',
-      password: 'raccoon2026',
-      role: 'superadmin',
-      is_active: true
-    };
-    teachers.unshift(superAdminObj);
-    setLocal(STORAGE_KEYS.TEACHERS, teachers);
+// 4. Teacher / Admin Table Complete CRUD API (Direct Firestore)
+export async function getLiveTeachers() {
+  try {
+    const snap = await getDocs(collection(db, 'teachers'));
+    const list = [];
+    snap.forEach(d => list.push({ ...d.data(), id: d.id }));
+    setLocal(STORAGE_KEYS.TEACHERS, list);
+    return list;
+  } catch (err) {
+    console.warn('getLiveTeachers error:', err);
+    return getLocal(STORAGE_KEYS.TEACHERS, []);
   }
-  return teachers;
 }
 
-export function saveTeachersTable(teachers) {
+export function getTeachersTable() {
+  return getLocal(STORAGE_KEYS.TEACHERS, []);
+}
+
+export async function saveTeachersTable(teachers) {
   setLocal(STORAGE_KEYS.TEACHERS, teachers);
-  teachers.forEach(t => syncTeacherToFirestore(t));
+  for (const t of teachers) {
+    if (t && t.id) {
+      await syncTeacherToFirestore(t);
+    }
+  }
 }
 
-export function createTeacherRecord(newTeacher) {
-  const teachers = getTeachersTable();
+export async function createTeacherRecord(newTeacher) {
   const emailVal = (newTeacher.email || newTeacher.username || '').toLowerCase().trim();
-  const existing = teachers.find(t => t.email?.toLowerCase() === emailVal || t.recovery_email?.toLowerCase() === emailVal);
-  if (existing) {
+  
+  // Check on Firestore
+  const qEmail = query(collection(db, 'teachers'), where('email', '==', emailVal));
+  const snapEmail = await getDocs(qEmail);
+  if (!snapEmail.empty) {
     throw new Error(`Email / Username "${emailVal}" đã tồn tại trong hệ thống!`);
   }
 
@@ -1470,48 +1535,71 @@ export function createTeacherRecord(newTeacher) {
     name: newTeacher.name.trim(),
     recovery_email: emailVal,
     email: emailVal,
+    username: emailVal,
     password: newTeacher.password?.trim() || '123456',
     role: newTeacher.role || 'teacher',
     is_active: newTeacher.is_active !== undefined ? newTeacher.is_active : true,
     created_at: new Date().toISOString()
   };
 
-  const updated = [teacherObj, ...teachers];
-  saveTeachersTable(updated);
+  await setDoc(doc(db, 'teachers', teacherObj.id), teacherObj, { merge: true });
+
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
+  const updated = [teacherObj, ...teachers.filter(t => t.id !== teacherObj.id)];
+  setLocal(STORAGE_KEYS.TEACHERS, updated);
   return { success: true, teacher: teacherObj };
 }
 
-export function updateTeacherRecord(teacherId, updatedFields) {
-  const teachers = getTeachersTable();
-  const teacher = teachers.find(t => t.id === teacherId);
-  if (!teacher) throw new Error("Tài khoản quản trị viên không tồn tại");
+export async function updateTeacherRecord(teacherId, updatedFields) {
+  try {
+    const teacherDocRef = doc(db, 'teachers', teacherId);
+    await updateDoc(teacherDocRef, { ...updatedFields, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.warn('updateTeacherRecord Firestore error:', err);
+  }
 
-  Object.assign(teacher, updatedFields);
-  saveTeachersTable(teachers);
-  return { success: true, teacher };
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
+  const teacher = teachers.find(t => t.id === teacherId);
+  if (teacher) {
+    Object.assign(teacher, updatedFields);
+    setLocal(STORAGE_KEYS.TEACHERS, teachers);
+  }
+  return { success: true };
 }
 
-export function toggleTeacherStatus(teacherId) {
-  const teachers = getTeachersTable();
-  const teacher = teachers.find(t => t.id === teacherId);
-  if (!teacher) throw new Error("Tài khoản không tồn tại");
-  if (teacher.role === 'superadmin') {
+export async function toggleTeacherStatus(teacherId, currentActive) {
+  if (teacherId === 'superadmin_001') {
     throw new Error("Không thể ngừng kích hoạt tài khoản Super Admin chính");
   }
+  const newStatus = currentActive !== false ? false : true;
+  try {
+    await updateDoc(doc(db, 'teachers', teacherId), { is_active: newStatus, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.warn('toggleTeacherStatus Firestore error:', err);
+  }
 
-  teacher.is_active = teacher.is_active === false ? true : false;
-  saveTeachersTable(teachers);
-  return { success: true, teacher };
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
+  const teacher = teachers.find(t => t.id === teacherId);
+  if (teacher) {
+    teacher.is_active = newStatus;
+    setLocal(STORAGE_KEYS.TEACHERS, teachers);
+  }
+  return { success: true, is_active: newStatus };
 }
 
-export function deleteTeacherRecord(teacherId) {
-  const teachers = getTeachersTable();
-  const target = teachers.find(t => t.id === teacherId);
-  if (target && target.role === 'superadmin') {
+export async function deleteTeacherRecord(teacherId) {
+  if (teacherId === 'superadmin_001') {
     throw new Error("Không thể xóa tài khoản Super Admin chính");
   }
+  try {
+    await deleteDoc(doc(db, 'teachers', teacherId));
+  } catch (err) {
+    console.warn('deleteTeacherRecord Firestore error:', err);
+  }
+
+  const teachers = getLocal(STORAGE_KEYS.TEACHERS, []);
   const filtered = teachers.filter(t => t.id !== teacherId);
-  saveTeachersTable(filtered);
+  setLocal(STORAGE_KEYS.TEACHERS, filtered);
   return { success: true };
 }
 

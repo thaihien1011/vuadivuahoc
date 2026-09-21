@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { User, Star, Award, CheckCircle2, Save, GraduationCap, Palette, LogOut } from 'lucide-react';
 import AvatarCanvas from '../components/avatar/AvatarCanvas';
 import { THEMES, getCurrentTheme, applyTheme } from '../services/theme';
-import { syncStudentToFirestore } from '../services/api';
+import { getLiveLockedScores, updateStudentRecord, setCurrentAuthUser, getCurrentAuthUser } from '../services/api';
 
 export default function StudentProfilePage({ studentData, onUpdateStudent, onLogout }) {
-  const [name, setName] = useState(studentData?.name || 'Nguyễn Trà My');
+  const [name, setName] = useState(studentData?.name || 'Học sinh');
   const [className, setClassName] = useState(studentData?.class || 'Lớp 8/8');
   const [gender, setGender] = useState(studentData?.gender || 'female');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [activeTheme, setActiveTheme] = useState(getCurrentTheme());
+  const [lockedScores, setLockedScores] = useState([]);
 
   useEffect(() => {
     const handleThemeChange = () => {
@@ -19,56 +20,49 @@ export default function StudentProfilePage({ studentData, onUpdateStudent, onLog
     return () => window.removeEventListener('vdvh_theme_changed', handleThemeChange);
   }, []);
 
+  useEffect(() => {
+    async function loadScores() {
+      if (studentData?.id) {
+        const scores = await getLiveLockedScores(studentData.id);
+        setLockedScores(scores);
+      }
+    }
+    loadScores();
+  }, [studentData?.id]);
+
   const handleSelectTheme = (themeId) => {
     applyTheme(themeId);
     setActiveTheme(themeId);
   };
 
-  const lockedScores = JSON.parse(localStorage.getItem('vdvh_locked_scores') || '[]')
-    .filter(ls => ls.student_id === studentData?.id);
-
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaveSuccessMsg('');
 
-    const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-    const studentIdx = students.findIndex(s => s.id === studentData?.id);
-
     const bodyType = gender === 'female' ? 'body_female' : 'base';
+    const updatedFields = {
+      name: name.trim(),
+      class: className.trim(),
+      gender: gender,
+      body: bodyType
+    };
 
-    let updatedStudentObj = null;
-    if (studentIdx !== -1) {
-      students[studentIdx].name = name.trim();
-      students[studentIdx].class = className.trim();
-      students[studentIdx].gender = gender;
-      students[studentIdx].body = bodyType;
-      updatedStudentObj = students[studentIdx];
-      localStorage.setItem('vdvh_students', JSON.stringify(students));
-    } else {
-      updatedStudentObj = {
-        id: studentData?.id || '',
-        name: name.trim(),
-        username: studentData?.username || '',
-        class: className.trim(),
-        gender: gender,
-        body: bodyType,
-        current_star: studentData?.current_star || 0,
-        avatar_config: studentData?.avatar_config || {}
-      };
+    if (studentData?.id) {
+      await updateStudentRecord(studentData.id, updatedFields);
     }
 
-    const currentAuth = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
+    const currentAuth = getCurrentAuthUser() || {};
     if (currentAuth.uid === studentData?.id) {
-      currentAuth.name = name.trim();
-      currentAuth.gender = gender;
-      currentAuth.body = bodyType;
-      localStorage.setItem('vdvh_current_user', JSON.stringify(currentAuth));
+      setCurrentAuthUser({
+        ...currentAuth,
+        name: name.trim(),
+        gender: gender,
+        body: bodyType
+      });
     }
-
-    syncStudentToFirestore(updatedStudentObj);
 
     if (onUpdateStudent) {
-      onUpdateStudent(updatedStudentObj);
+      onUpdateStudent();
     }
 
     setSaveSuccessMsg('Đã cập nhật thông tin thành công!');

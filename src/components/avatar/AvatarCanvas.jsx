@@ -10,6 +10,8 @@ import { WARDROBE_ITEMS_CATALOG } from '../../config/constants';
  * 4. Top / Shirt (public/assets/avatar/top/<id>.png)
  * 5. Hair / Hat (public/assets/avatar/hair/<id>.png)
  */
+import { getCurrentAuthUser } from '../../services/api';
+
 export default function AvatarCanvas({ avatarConfig = {}, body = null, gender = null, size = 160, className = '' }) {
   const [imgErrors, setImgErrors] = useState({});
 
@@ -19,11 +21,9 @@ export default function AvatarCanvas({ avatarConfig = {}, body = null, gender = 
     if (gender) {
       activeBody = (gender === 'female' || gender === 'nữ' || gender === 'Nữ') ? 'base_female' : 'base';
     } else {
-      const user = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
-      const students = JSON.parse(localStorage.getItem('vdvh_students') || '[]');
-      const st = students.find(s => s.id === user?.uid);
-      const studentGender = st?.gender || user?.gender || 'female';
-      activeBody = st?.body || (studentGender === 'female' || studentGender === 'nữ' ? 'base_female' : 'base');
+      const user = getCurrentAuthUser();
+      const studentGender = user?.gender || 'female';
+      activeBody = user?.body || (studentGender === 'female' || studentGender === 'nữ' ? 'base_female' : 'base');
     }
   }
 

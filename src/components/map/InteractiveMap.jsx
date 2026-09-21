@@ -610,17 +610,12 @@ export default function InteractiveMap({ lessons = [], lockedScores = [], onSele
 
       {/* TAB 2: DANH SÁCH CHẶNG BÀI HỌC (LIST VIEW) */}
       {activeSubTab === 'list' && (() => {
-        const attempts = JSON.parse(localStorage.getItem('vdvh_quiz_attempts') || '[]');
-        const currentUser = JSON.parse(localStorage.getItem('vdvh_current_user') || '{}');
-        const studentAttempts = attempts.filter(a => a.student_id === currentUser?.uid);
-
         const listLessons = filteredLessons
           .filter(lesson => {
             const status = getLocationStatus(lesson.id);
-            const hasAttempt = studentAttempts.some(a => a.lesson_id === lesson.id);
             const scoreInfo = getScoreForLesson(lesson.id);
-            // REQUIREMENT 3: Only display lessons where student HAS clicked to do quiz
-            return status !== 'not_started' || hasAttempt || scoreInfo != null;
+            // Only display lessons where student has started/scored or completed
+            return status !== 'not_started' || scoreInfo != null;
           })
           .sort((a, b) => {
             const statusA = getLocationStatus(a.id);
