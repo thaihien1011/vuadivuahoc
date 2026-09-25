@@ -339,6 +339,56 @@ const TOPIC_KNOWLEDGE_MAP = [
   }
 ];
 
+const HISTORY_MILESTONES_MAP = [
+  {
+    keywords: ["ly thai to", "doi do", "thang long", "chieu doi do", "1010"],
+    match: (q) => (q.includes("ly thai to") || q.includes("doi do") || q.includes("chieu doi do")) && (q.includes("thang long") || q.includes("nam bao nhieu") || q.includes("nam nao") || q.includes("hoa lu")),
+    answer: "Vào mùa thu năm **1010** (năm Canh Tuất), vua **Lý Thái Tổ** (Lý Công Uẩn) đã ban *Chiếu dời đô*, chuyển kinh đô nước Đại Cồ Việt từ Hoa Lư (Ninh Bình) về thành Đại La và đổi tên thành **Thăng Long** (Hà Nội ngày nay) 📜🐉!"
+  },
+  {
+    keywords: ["ngo quyen", "bach dang", "nam han", "coc go", "938"],
+    match: (q) => q.includes("ngo quyen") || (q.includes("bach dang") && (q.includes("938") || q.includes("nam han") || q.includes("nam bao nhieu") || q.includes("nam nao"))),
+    answer: "Năm **938**, **Ngô Quyền** đã lãnh đạo nhân dân ta dùng kế cắm cọc gỗ vạt nhọn bịt sắt tiêu diệt quân Nam Hán trên sông Bạch Đằng, chấm dứt hơn 1.000 năm Bắc thuộc, mở ra kỷ nguyên độc lập tự chủ lâu dài cho dân tộc ⚔️🌊!"
+  },
+  {
+    keywords: ["dien bien phu", "1954", "de castries", "vo nguyen giap"],
+    match: (q) => q.includes("dien bien phu") && (q.includes("1954") || q.includes("ngay nao") || q.includes("nam nao") || q.includes("nam bao nhieu") || q.includes("tuong") || q.includes("ai chi huy")),
+    answer: "Chiến dịch **Điện Biên Phủ** toàn thắng vào ngày **7/5/1954** dưới sự chỉ huy tài tình của Đại tướng Võ Nguyên Giáp. Đây là chiến thắng 'Lừng lẫy năm châu, chấn động địa cầu', đập tan tập đoàn cứ điểm của thực dân Pháp 🎖️🇻🇳!"
+  },
+  {
+    keywords: ["30/4", "giai phong mien nam", "1975", "dinh doc lap", "ho chi minh"],
+    match: (q) => (q.includes("30/4") || q.includes("giai phong mien nam") || q.includes("thong nhat dat nuoc")) && (q.includes("1975") || q.includes("nam nao") || q.includes("ngay nao") || q.includes("nam bao nhieu")),
+    answer: "Vào lúc 11 giờ 30 phút ngày **30/4/1975**, lá cờ cách mạng tung bay trên nóc Dinh Độc Lập, Chiến dịch Hồ Chí Minh toàn thắng, giải phóng hoàn toàn miền Nam, thống nhất đất nước non sông thu về một mối 🇻🇳⭐!"
+  },
+  {
+    keywords: ["quoc khanh", "2/9", "2/9/1945", "tuyen ngon doc lap", "ba dinh"],
+    match: (q) => q.includes("quoc khanh") || (q.includes("2/9") && (q.includes("bac ho") || q.includes("doc lap") || q.includes("tuyen ngon"))),
+    answer: "Ngày **2/9/1945**, tại Quảng trường Ba Đình lịch sử (Hà Nội), Chủ tịch Hồ Chí Minh đã đọc bản *Tuyên ngôn Độc lập*, khai sinh ra nước Việt Nam Dân chủ Cộng hòa (nay là nước CHXHCN Việt Nam) 📜🇻🇳!"
+  },
+  {
+    keywords: ["hai ba trung", "me linh", "nam 40"],
+    match: (q) => q.includes("hai ba trung"),
+    answer: "Vào mùa xuân năm **40** sau Công nguyên, **Hai Bà Trưng** (Trưng Trắc và Trưng Nhị) đã phất cờ khởi nghĩa tại Hát Môn (Mê Linh), đánh đuổi thái thú Tô Định, giành lại độc lập tự chủ cho đất nước 🐘⚔️!"
+  },
+  {
+    keywords: ["tran hung dao", "tran quoc tuan", "nguyen mong"],
+    match: (q) => q.includes("tran hung dao") || q.includes("tran quoc tuan"),
+    answer: "Quốc công Tiết chế **Trần Hưng Đạo** (Trần Quốc Tuấn) là vị tướng kiệt xuất đã lãnh đạo quân dân nhà Trần 3 lần đại thắng giặc Nguyên Mông xâm lược (1258, 1285, 1288) vang dội sử sách ⚔️🛡️!"
+  },
+  {
+    keywords: ["quang trung", "nguyen hue", "ngoc hoi", "dong da", "1789"],
+    match: (q) => q.includes("quang trung") || q.includes("nguyen hue") || q.includes("ngoc hoi dong da"),
+    answer: "Vào mùa xuân Kỷ Dậu năm **1789**, người anh hùng áo vải cờ đào **Quang Trung (Nguyễn Huệ)** đã thần tốc hành quân, đại phá 29 vạn quân Mãn Thanh trong trận Ngọc Hồi - Đống Đa oanh liệt 🦅⚡!"
+  },
+  {
+    keywords: ["vua hung", "gio to", "den hung", "van lang"],
+    match: (q) => q.includes("vua hung") || q.includes("gio to") || q.includes("den hung") || q.includes("van lang"),
+    answer: "Các **Vua Hùng** là những người có công dựng nên nhà nước **Văn Lang** - nhà nước đầu tiên của dân tộc ta đóng đô tại Phong Châu (Phú Thọ). Hằng năm vào ngày mùng **10 tháng 3 Âm lịch**, cả nước long trọng tổ chức Giỗ Tổ Hùng Vương 📜🏛️!"
+  }
+];
+
+const DEFAULT_GEMINI_KEY = 'AQ.Ab8RN6Jy6z-TgQsv3zEuFq8N23Lqwzu8PMqFJ3v664Leu5W5Iw';
+
 export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = false, lessons = []) {
   if (!userQuestion || !userQuestion.trim()) return '';
 
@@ -348,12 +398,12 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
   const formatResponse = (rawText) => sanitizeChatResponse(rawText, isFirstMessage);
 
   // 1. Try Gemini REST API with Empirically Verified Working Models
-  const effectiveKey = apiKey || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '') || '';
+  const effectiveKey = apiKey || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '') || DEFAULT_GEMINI_KEY;
   if (effectiveKey) {
     const modelsToTry = [
       'gemini-2.5-flash',
-      'gemini-flash-lite-latest',
-      'gemini-3-flash-preview',
+      'gemini-2.0-flash-exp',
+      'gemini-1.5-flash-latest',
       'gemma-4-26b-a4b-it'
     ];
 
@@ -371,7 +421,7 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
               {
                 role: 'user',
                 parts: [
-                  { text: `${SYSTEM_PROMPT}${turnInstruction}\n\nHọc sinh hỏi: "${userQuestion}"\n\nHãy trả lời Raccoon:` }
+                  { text: `${SYSTEM_PROMPT}${turnInstruction}\n\nHọc sinh hỏi: "${userQuestion}"\n\nHãy trả lời Raccoon ngắn gọn, chính xác, kèm icon sinh động:` }
                 ]
               }
             ]
@@ -392,31 +442,43 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
     }
   }
 
-  // 2. CHECK TOPIC & RESOURCE KNOWLEDGE (E.g., "than đá", "dầu khí", "bô xít", "cà phê")
+  // 2. CHECK HISTORY MILESTONES SPECIFIC INTENT MATCH (E.g. "Vua Lý Thái Tổ dời đô...")
+  for (let item of HISTORY_MILESTONES_MAP) {
+    if (item.match && item.match(normalizedQ)) {
+      return formatResponse(item.answer);
+    }
+  }
+
+  // 3. CHECK TOPIC & RESOURCE KNOWLEDGE (E.g., "than đá", "dầu khí", "bô xít", "cà phê")
   for (let topic of TOPIC_KNOWLEDGE_MAP) {
     if (topic.keywords.some(kw => normalizedQ.includes(kw))) {
       return formatResponse(topic.answer);
     }
   }
 
-  // 3. CHECK REGION / GEOGRAPHY SPECIFIC INTENT MATCH (E.g. "đắc lắc thuộc miền nào ?")
+  // 4. CHECK REGION / GEOGRAPHY SPECIFIC INTENT MATCH (E.g. "đắc lắc thuộc miền nào ?")
   const isRegionQuery = normalizedQ.includes("mien nao") || 
                         normalizedQ.includes("vung nao") || 
                         normalizedQ.includes("o dau") || 
                         normalizedQ.includes("thuoc mien") ||
-                        normalizedQ.includes("nam o dau");
+                        normalizedQ.includes("nam o dau") ||
+                        normalizedQ.includes("thuoc tinh nao") ||
+                        normalizedQ.includes("o tinh nao") ||
+                        normalizedQ.includes("dia danh nao");
 
-  for (let item of PROVINCE_REGION_MAP) {
-    const isMatched = item.names.some(name => normalizedQ.includes(name));
-    if (isMatched) {
-      if (isRegionQuery) {
-        return formatResponse(`Tỉnh/địa danh ${item.province} thuộc ${item.macroRegion} (${item.region}) của Việt Nam 🗺️!\n\n${item.details}`);
+  if (isRegionQuery || normalizedQ.includes("tinh ") || normalizedQ.includes("thanh pho ")) {
+    for (let item of PROVINCE_REGION_MAP) {
+      const isMatched = item.names.some(name => normalizedQ.includes(name));
+      if (isMatched) {
+        if (isRegionQuery) {
+          return formatResponse(`Tỉnh/địa danh ${item.province} thuộc ${item.macroRegion} (${item.region}) của Việt Nam 🗺️!\n\n${item.details}`);
+        }
+        return formatResponse(`Tỉnh/địa danh ${item.province} nằm ở vùng ${item.region} (${item.macroRegion}) ✨.\n\n${item.details}`);
       }
-      return formatResponse(`Tỉnh/địa danh ${item.province} nằm ở vùng ${item.region} (${item.macroRegion}) ✨.\n\n${item.details}`);
     }
   }
 
-  // 4. Search dynamic lessons database
+  // 5. Search dynamic lessons database
   let activeLessons = lessons;
   if (!activeLessons || activeLessons.length === 0) {
     try {
@@ -439,11 +501,11 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
     return formatResponse(`Raccoon biết về địa danh ${matchedLesson.location_name} nè: ${matchedLesson.intro_text || matchedLesson.subtitle} 📍. Nơi này nằm thuộc vùng ${matchedLesson.region}! Bạn hãy mở cột mốc ${matchedLesson.location_name} trên bản đồ để thi đấu nhé ⭐!`);
   }
 
-  // 5. Products / Specialties Query Intent
+  // 6. Products / Specialties Query Intent
   if (normalizedQ.includes("san vat") || normalizedQ.includes("dac san") || normalizedQ.includes("co gi ngon") || normalizedQ.includes("khoang san")) {
     return formatResponse(`Việt Nam ta có 63 tỉnh thành với tài nguyên & sản vật phong phú: Than đá (Quảng Ninh), Dầu khí (Bà Rịa - Vũng Tàu), Cà phê (Đắk Lắk), Chè (Thái Nguyên), Dừa (Bến Tre), Cua (Cà Mau)... Hãy hỏi Raccoon về tài nguyên/địa danh cụ thể để Raccoon giải đáp chi tiết cho bạn nhé ⛏️☕!`);
   }
 
-  // 6. Intelligent contextual default response
-  return formatResponse(`Raccoon đã ghi nhận câu hỏi: "${userQuestion}". Việt Nam ta gồm 63 tỉnh thành giàu đẹp với 3 miền Bắc - Trung - Nam và vùng Tây Nguyên hùng vĩ 📜🗺️. Bạn hãy thử hỏi Raccoon về các địa danh như Đắk Lắk, Điện Biên, Hà Nội, Đà Nẵng, Bến Tre, Cà Mau... nhé!`);
+  // 7. Intelligent contextual default response
+  return formatResponse(`Raccoon đã ghi nhận câu hỏi: "${userQuestion}". Việt Nam ta gồm 63 tỉnh thành giàu đẹp với lịch sử hào hùng và 3 miền Bắc - Trung - Nam 📜🗺️. Bạn hãy thử hỏi Raccoon về các sự kiện lịch sử (Điện Biên Phủ, Dời đô Thăng Long, 30/4/1975...) hoặc địa danh (Đắk Lắk, Hà Nội, Huế...) nhé!`);
 }
