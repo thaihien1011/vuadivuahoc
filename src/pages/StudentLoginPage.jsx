@@ -78,7 +78,7 @@ export default function StudentLoginPage({ onLoginSuccess, onSwitchToRegister })
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={e => setPassword(removeVietnameseTones(e.target.value))}
+              onChange={e => setPassword(e.target.value)}
               placeholder="Nhập mật khẩu..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-9 text-xs text-slate-900 font-extrabold focus:outline-none focus:border-[#58cc02] font-mono"
               required

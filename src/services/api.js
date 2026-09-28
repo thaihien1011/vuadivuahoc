@@ -124,29 +124,83 @@ export async function syncScoreToFirestore(studentId, lessonId, score, stampLeve
 }
 
 export async function loginStudentAsync(inputUsername, inputPassword) {
-  const normUsername = (inputUsername || '').trim().toLowerCase();
+  const rawInput = (inputUsername || '').trim();
+  const normUsername = rawInput.toLowerCase();
+  const noToneUsername = removeVietnameseTones(rawInput).toLowerCase();
+
   if (!normUsername) {
-    throw new Error('Vui lòng nhập tên đăng nhập học sinh');
+    throw new Error('Vui lòng nhập tên đăng nhập hoặc họ tên học sinh');
+  }
+
+  const trimmedInputPass = (inputPassword || '').trim();
+  if (!trimmedInputPass) {
+    throw new Error('Vui lòng nhập mật khẩu');
   }
   
   let student = null;
 
   // 1. Direct Cloud Firestore query (Strict Single Source of Truth)
   try {
-    const q = query(collection(db, 'students'), where('username', '==', normUsername));
-    const querySnap = await getDocs(q);
+    // 1a. Query by exact username
+    const qUser = query(collection(db, 'students'), where('username', '==', normUsername));
+    const querySnap = await getDocs(qUser);
     if (!querySnap.empty) {
       student = { ...querySnap.docs[0].data(), id: querySnap.docs[0].id };
-    } else {
-      const docSnap = await getDoc(doc(db, 'students', normUsername));
+    } 
+    
+    // 1b. Query by username without tones
+    if (!student && noToneUsername !== normUsername) {
+      const qNoTone = query(collection(db, 'students'), where('username', '==', noToneUsername));
+      const noToneSnap = await getDocs(qNoTone);
+      if (!noToneSnap.empty) {
+        student = { ...noToneSnap.docs[0].data(), id: noToneSnap.docs[0].id };
+      }
+    }
+
+    // 1c. Query by Doc ID or ID with prefix
+    if (!student) {
+      const docSnap = await getDoc(doc(db, 'students', rawInput));
       if (docSnap.exists()) {
         student = { ...docSnap.data(), id: docSnap.id };
       } else {
-        const prefixDoc = await getDoc(doc(db, 'students', `st_${normUsername}`));
+        const prefixDoc = await getDoc(doc(db, 'students', `st_${rawInput}`));
         if (prefixDoc.exists()) {
           student = { ...prefixDoc.data(), id: prefixDoc.id };
         }
       }
+    }
+
+    // 1d. Query by Full Name (in case student typed full name e.g. "Nguyễn Trà My")
+    if (!student) {
+      const qName = query(collection(db, 'students'), where('name', '==', rawInput));
+      const nameSnap = await getDocs(qName);
+      if (!nameSnap.empty) {
+        student = { ...nameSnap.docs[0].data(), id: nameSnap.docs[0].id };
+      }
+    }
+
+    // 1e. Fallback: Search all live students with case/tone-insensitive lookup
+    if (!student) {
+      const allStudentsSnap = await getDocs(collection(db, 'students'));
+      allStudentsSnap.forEach(d => {
+        if (!student) {
+          const data = d.data();
+          const sUser = (data.username || '').toLowerCase();
+          const sName = (data.name || '').toLowerCase();
+          const sNoToneUser = removeVietnameseTones(sUser);
+          const sNoToneName = removeVietnameseTones(sName);
+          
+          if (
+            sUser === normUsername || 
+            sNoToneUser === noToneUsername || 
+            sName === normUsername ||
+            sNoToneName === noToneUsername ||
+            d.id.toLowerCase() === normUsername
+          ) {
+            student = { ...data, id: d.id };
+          }
+        }
+      });
     }
   } catch (err) {
     console.error('Firestore student login query error:', err);
@@ -162,11 +216,15 @@ export async function loginStudentAsync(inputUsername, inputPassword) {
     throw new Error('Tài khoản của bạn đã bị ngừng kích hoạt. Vui lòng liên hệ quản trị viên.');
   }
 
-  // Verify password if student has a password saved on Firestore
-  if (student.password && inputPassword) {
-    if (student.password !== inputPassword.trim()) {
-      throw new Error('Mật khẩu không chính xác.');
-    }
+  // Verify password with case/tone-tolerant check
+  const expectedPass = String(student.password || '123456').trim();
+  const isPassValid = 
+    expectedPass === trimmedInputPass ||
+    expectedPass.toLowerCase() === trimmedInputPass.toLowerCase() ||
+    removeVietnameseTones(expectedPass).toLowerCase() === removeVietnameseTones(trimmedInputPass).toLowerCase();
+
+  if (!isPassValid) {
+    throw new Error('Mật khẩu không chính xác.');
   }
 
   // Update session
@@ -176,7 +234,9 @@ export async function loginStudentAsync(inputUsername, inputPassword) {
     username: student.username,
     name: student.name,
     gender: student.gender,
-    body: student.body
+    body: student.body,
+    class_id: student.class_id || student.class || 'Không liên kết',
+    class: student.class || student.class_id || 'Không liên kết'
   });
 
   // Keep local storage cache synchronized with verified Firestore student
