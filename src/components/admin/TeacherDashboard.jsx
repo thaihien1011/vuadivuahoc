@@ -44,6 +44,7 @@ export default function TeacherDashboard() {
   // Sync state
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
+  const [sheetId, setSheetId] = useState('');
 
   // Excel Import state
   const [isImporting, setIsImporting] = useState(false);
@@ -1203,7 +1204,7 @@ export default function TeacherDashboard() {
                           <input
                             type="number"
                             value={editingItem.star_cost}
-                            onChange={e => setEditingItem({ ...editingItem, star_cost: parseInt(e.target.value) || 0 })}
+                            onChange={e => setEditingItem({ ...editingItem, star_cost: parseInt(e.target.value, 10) || 0 })}
                             className="bg-white border border-purple-300 rounded px-2 py-1 text-xs font-bold w-16 text-center"
                           />
                         ) : `${item.star_cost} ⭐`}
@@ -1553,7 +1554,7 @@ export default function TeacherDashboard() {
                 <input
                   type="number"
                   value={studentForm.current_star}
-                  onChange={e => setStudentForm({ ...studentForm, current_star: parseInt(e.target.value) || 0 })}
+                  onChange={e => setStudentForm({ ...studentForm, current_star: parseInt(e.target.value, 10) || 0 })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-900"
                 />
               </div>
@@ -1650,7 +1651,7 @@ export default function TeacherDashboard() {
                   <input
                     type="number"
                     value={editingStudent.current_star || 0}
-                    onChange={e => setEditingStudent({ ...editingStudent, current_star: parseInt(e.target.value) || 0 })}
+                    onChange={e => setEditingStudent({ ...editingStudent, current_star: parseInt(e.target.value, 10) || 0 })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-amber-600"
                   />
                 </div>

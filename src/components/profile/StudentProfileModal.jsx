@@ -27,6 +27,11 @@ export default function StudentProfileModal({ studentData, onClose, onLogout }) 
     loadScores();
   }, [studentData?.id]);
 
+  const handleSelectTheme = (themeId) => {
+    applyTheme(themeId);
+    setActiveTheme(themeId);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="duo-card max-w-lg w-full p-6 text-center space-y-5 animate-duo-bounce shadow-2xl relative border-b-8 border-b-sky-600 max-h-[90vh] overflow-y-auto">

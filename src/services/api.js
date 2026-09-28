@@ -7,6 +7,44 @@ import { db } from './firebaseConfig';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { removeVietnameseTones } from '../utils/textUtils';
 
+export const STORAGE_KEYS = {
+  STUDENTS: 'vdvh_students',
+  TEACHERS: 'vdvh_teachers',
+  CLASSES: 'vdvh_classes',
+  LESSONS: 'vdvh_lessons',
+  QUESTIONS: 'vdvh_questions',
+  ASSIGNMENTS: 'vdvh_assignments',
+  LOCKED_SCORES: 'vdvh_locked_scores',
+  STUDENT_WARDROBE: 'vdvh_student_wardrobe',
+  ATTEMPTS: 'vdvh_quiz_attempts',
+  CURRENT_USER: 'vdvh_current_user',
+  STAR_TRANSACTIONS: 'vdvh_star_transactions',
+  AUDIT_LOG: 'vdvh_audit_log'
+};
+
+const DATA_VERSION_KEY = 'vdvh_data_version';
+const CURRENT_DATA_VERSION = 'v2.3_clean_slate';
+
+// LocalStorage Helper
+export function getLocal(key, defaultValue = []) {
+  if (!key) return defaultValue;
+  const data = localStorage.getItem(key);
+  try {
+    return data ? JSON.parse(data) : defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
+export function setLocal(key, value) {
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('setLocal error:', e);
+  }
+}
+
 export async function getLiveStudents() {
   try {
     const snap = await getDocs(collection(db, 'students'));
@@ -399,36 +437,6 @@ export async function syncTeacherToFirestore(teacher) {
   }
 }
 
-const STORAGE_KEYS = {
-  STUDENTS: 'vdvh_students',
-  TEACHERS: 'vdvh_teachers',
-  CLASSES: 'vdvh_classes',
-  LESSONS: 'vdvh_lessons',
-  QUESTIONS: 'vdvh_questions',
-  ASSIGNMENTS: 'vdvh_assignments',
-  LOCKED_SCORES: 'vdvh_locked_scores',
-  STUDENT_WARDROBE: 'vdvh_student_wardrobe',
-  ATTEMPTS: 'vdvh_quiz_attempts',
-  CURRENT_USER: 'vdvh_current_user'
-};
-
-const DATA_VERSION_KEY = 'vdvh_data_version';
-const CURRENT_DATA_VERSION = 'v2.3_clean_slate';
-
-// LocalStorage Helper
-function getLocal(key, defaultValue = []) {
-  const data = localStorage.getItem(key);
-  try {
-    return data ? JSON.parse(data) : defaultValue;
-  } catch (e) {
-    return defaultValue;
-  }
-}
-
-function setLocal(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 // Initialize LocalStorage safely without hardcoded dummy data
 export function initLocalStorage() {
   const storedVersion = localStorage.getItem(DATA_VERSION_KEY);
@@ -812,10 +820,10 @@ export async function saveScore(attempt_id) {
 
   if (!existingBest || attempt.score > existingBest.score) {
     if (new_stamp > old_stamp) {
-      star_earned = (STAMP_REWARD_TABLE[new_stamp] || 0) - (STAMP_REWARD_TABLE[old_stamp] || 0);
+      star_earned = (Number(STAMP_REWARD_TABLE[new_stamp]) || 0) - (Number(STAMP_REWARD_TABLE[old_stamp]) || 0);
 
       if (star_earned > 0 && student) {
-        student.current_star = (student.current_star || 0) + star_earned;
+        student.current_star = (Number(student.current_star) || 0) + Number(star_earned);
         transactions.push({
           id: 'st_tx_' + Date.now(),
           student_id: user.uid,
@@ -1480,7 +1488,7 @@ export async function createStudentRecord(newStudent) {
     gender: newStudent.gender || 'male',
     class: newStudent.class || 'Lớp 8/8',
     body: newStudent.gender === 'female' ? 'body_female' : 'base',
-    current_star: parseInt(newStudent.current_star) || 0,
+    current_star: parseInt(newStudent.current_star, 10) || 0,
     streak: 3,
     is_active: newStudent.is_active !== undefined ? newStudent.is_active : true,
     must_change_password: false,

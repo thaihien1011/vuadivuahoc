@@ -386,9 +386,6 @@ const HISTORY_MILESTONES_MAP = [
     answer: "Các **Vua Hùng** là những người có công dựng nên nhà nước **Văn Lang** - nhà nước đầu tiên của dân tộc ta đóng đô tại Phong Châu (Phú Thọ). Hằng năm vào ngày mùng **10 tháng 3 Âm lịch**, cả nước long trọng tổ chức Giỗ Tổ Hùng Vương 📜🏛️!"
   }
 ];
-
-const DEFAULT_GEMINI_KEY = 'AQ.Ab8RN6Jy6z-TgQsv3zEuFq8N23Lqwzu8PMqFJ3v664Leu5W5Iw';
-
 export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = false, lessons = []) {
   if (!userQuestion || !userQuestion.trim()) return '';
 
@@ -398,7 +395,7 @@ export async function askRaccoonAI(userQuestion, apiKey = '', isFirstMessage = f
   const formatResponse = (rawText) => sanitizeChatResponse(rawText, isFirstMessage);
 
   // 1. Try Gemini REST API with Empirically Verified Working Models
-  const effectiveKey = apiKey || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '') || DEFAULT_GEMINI_KEY;
+  const effectiveKey = apiKey || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_GEMINI_API_KEY : '');
   if (effectiveKey) {
     const modelsToTry = [
       'gemini-2.5-flash',
