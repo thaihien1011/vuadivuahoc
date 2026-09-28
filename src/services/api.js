@@ -5,6 +5,7 @@ import { STAMP_REWARD_TABLE, WARDROBE_ITEMS_CATALOG } from '../config/constants'
 import * as XLSX from 'xlsx';
 import { db } from './firebaseConfig';
 import { collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { removeVietnameseTones } from '../utils/textUtils';
 
 export async function getLiveStudents() {
   try {
