@@ -1400,7 +1400,16 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <a
+                href="/templates/vuadivuahoc_question_bank_template.xlsx"
+                download="vuadivuahoc_question_bank_template.xlsx"
+                className="cursor-pointer inline-flex items-center gap-2 bg-white hover:bg-slate-50 border-2 border-emerald-600 text-emerald-700 hover:text-emerald-800 font-extrabold px-5 py-3 rounded-xl text-xs shadow-sm hover:shadow transition-all"
+              >
+                <Download className="w-4 h-4 text-emerald-600" />
+                <span>Tải Template Mẫu (.xlsx)</span>
+              </a>
+
               <label className="cursor-pointer inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold px-5 py-3 rounded-xl text-xs shadow-md hover:shadow-lg transition-all">
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Chọn File Excel Từ Máy Tính</span>

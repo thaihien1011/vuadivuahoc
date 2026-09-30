@@ -1162,7 +1162,18 @@ export async function syncQuestions(sheet_id) {
     throw new Error('PERMISSION_DENIED: Chỉ giáo viên hoặc Admin mới có quyền đồng bộ dữ liệu từ Google Sheet');
   }
 
-  const targetSheetId = sheet_id || '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo';
+  let rawInput = (sheet_id || '').trim();
+  let targetSheetId = '1Pbm5GAx_yI22_vwJpQqKPTei81kjIhjuj-7_Db5lMxo';
+
+  if (rawInput) {
+    if (rawInput.includes('/d/')) {
+      const match = rawInput.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      targetSheetId = match ? match[1] : rawInput;
+    } else {
+      targetSheetId = rawInput;
+    }
+  }
+
   let lessonsUpdated = 0;
   let questionsUpdated = 0;
 
